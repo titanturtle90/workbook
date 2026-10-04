@@ -1,0 +1,23 @@
+{
+  "name": "Workbook",
+  "short_name": "Workbook",
+  "description": "Every ask at work, organized: who asked, what they asked, your next step, when it's due, and which project it belongs to.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#152238",
+  "theme_color": "#152238",
+  "categories": ["productivity", "business"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Today", "url": "./index.html#today", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "All tasks", "url": "./index.html#tasks", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "People", "url": "./index.html#people", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}

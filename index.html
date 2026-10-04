@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Workbook</title>
+<meta name="description" content="Workbook — every ask at work in one place: who asked, what they asked, your next step, when it's due, and which project it belongs to.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#152238">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workbook">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css?v=1">
+<script>
+  // Apply the saved theme before first paint so there's no flash.
+  try { var t = JSON.parse(localStorage.getItem("wb:theme")); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+    <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 10v10"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></symbol>
+    <symbol id="i-review" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9z"/><path d="m9 13 2 2 4-4"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7M21 3l-9 9"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6 2h12M6 22h12M7 2v4a5 5 0 0 0 10 0V2M7 22v-4a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M4 4h16v12l-4 4H4Z"/><path d="M16 20v-4h4M8 9h8M8 13h5"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></symbol>
+    <symbol id="i-meeting" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1M14 15h4a4 4 0 0 1 4 4v1"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></symbol>
+    <symbol id="i-me" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h4"/><path d="m15 19 2 2 4-4"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></symbol>
+    <symbol id="i-google" viewBox="0 0 24 24"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3Z" fill="#4285F4" stroke="none"/><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z" fill="#34A853" stroke="none"/><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2Z" fill="#FBBC05" stroke="none"/><path d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6Z" fill="#EA4335" stroke="none"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============ SIGN IN ============ -->
+<div class="signin" id="signin" hidden>
+  <div class="signin-card">
+    <img src="icon-192.png" alt="" class="signin-logo">
+    <h1>Workbook</h1>
+    <p class="lede">Every ask at work, organized. Sign in to sync between your computer and phone.</p>
+    <div id="signinBody"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="shell" id="shell" hidden>
+  <aside class="sidebar" aria-label="Sections">
+    <div class="side-brand">
+      <img src="icon-192.png" alt="">
+      <div>
+        <div class="brand-name">Workbook</div>
+        <div class="brand-sub" id="syncStatus"><span class="dot"></span><span class="txt">Connecting…</span></div>
+      </div>
+    </div>
+    <button class="btn primary block side-new" id="sideNew" type="button"><svg class="ic"><use href="#i-plus"/></svg>New task <kbd>N</kbd></button>
+    <nav class="side-nav" id="sideNav"></nav>
+    <div class="side-foot">
+      <button class="side-link" type="button" data-action="meeting"><svg class="ic"><use href="#i-meeting"/></svg>Meeting mode <kbd>M</kbd></button>
+      <button class="side-link" type="button" data-action="export"><svg class="ic"><use href="#i-download"/></svg>Export &amp; reports</button>
+      <button class="side-link" type="button" data-action="shortcuts"><svg class="ic"><use href="#i-keyboard"/></svg>Shortcuts <kbd>?</kbd></button>
+      <button class="side-link" type="button" data-action="settings"><svg class="ic"><use href="#i-settings"/></svg>Settings</button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="brand">
+        <img src="icon-192.png" alt="">
+        <div>
+          <div class="brand-name">Workbook</div>
+          <div class="brand-sub" id="syncStatusM"><span class="dot"></span><span class="txt">Connecting…</span></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" type="button" data-action="search" aria-label="Search"><svg class="ic"><use href="#i-search"/></svg></button>
+        <button class="icon-btn" type="button" data-action="meeting" aria-label="Meeting mode"><svg class="ic"><use href="#i-meeting"/></svg></button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="panel" data-panel="today" id="panel-today"></section>
+      <section class="panel" data-panel="tasks" id="panel-tasks" hidden></section>
+      <section class="panel" data-panel="people" id="panel-people" hidden></section>
+      <section class="panel" data-panel="projects" id="panel-projects" hidden></section>
+      <section class="panel" data-panel="done" id="panel-done" hidden></section>
+      <section class="panel" data-panel="review" id="panel-review" hidden></section>
+    </main>
+  </div>
+
+  <button class="fab" id="fab" type="button" aria-label="New task"><svg class="ic"><use href="#i-plus"/></svg></button>
+
+  <nav class="tabbar" aria-label="Main" id="tabbar"></nav>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="grabber"></div>
+  <div class="sheet-head" id="sheetHead"></div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot" id="sheetFoot" hidden></div>
+</div>
+
+<div class="menu" id="menu" role="menu" hidden></div>
+
+<div class="dialog" id="dialog" role="alertdialog">
+  <div class="box">
+    <h3 id="dialogTitle"></h3>
+    <p id="dialogText"></p>
+    <div class="btns"><button class="btn" id="dialogCancel" type="button">Cancel</button><button class="btn primary" id="dialogOk" type="button">OK</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"><span id="toastMsg"></span><button class="act" id="toastAct" type="button" hidden></button></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js?v=1"></script>
+<script src="js/core.js?v=1"></script>
+<script src="js/model.js?v=1"></script>
+<script src="js/store.js?v=1"></script>
+<script src="js/components.js?v=1"></script>
+<script src="js/editor.js?v=1"></script>
+<script src="js/views/today.js?v=1"></script>
+<script src="js/views/tasks.js?v=1"></script>
+<script src="js/views/people.js?v=1"></script>
+<script src="js/views/projects.js?v=1"></script>
+<script src="js/views/done.js?v=1"></script>
+<script src="js/views/review.js?v=1"></script>
+<script src="js/export.js?v=1"></script>
+<script src="js/shortcuts.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>
