@@ -43,6 +43,7 @@
   const ME = "me";
 
   const Model = { STATUSES, PRIORITIES, SOURCES, RECURRENCE, PROJECT_COLORS, ME };
+  Model.FOLLOW_UP_DAYS = 2; // default gap before nudging someone you are waiting on
   Model.ACTIVE_STATUSES = STATUSES.filter(s => s.key !== "done" && s.key !== "cancelled");
   Model.status = key => STATUSES.find(s => s.key === key) || STATUSES[0];
   Model.statusDot = key => STATUS_DOT[Model.status(key).color];

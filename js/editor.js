@@ -257,7 +257,7 @@
       if (v === "done") { Actions.complete(Store.tasks.get(id)); setTimeout(paint, 30); return; }
       mutate(t => {
         const was = Model.status(t.status).label;
-        if (v === "waiting") { t.waiting = Object.assign({ personId: "", since: "", followUp: "" }, t.waiting); if (!t.waiting.since) t.waiting.since = App.today(); if (!t.waiting.followUp) t.waiting.followUp = App.addDays(3); }
+        if (v === "waiting") { t.waiting = Object.assign({ personId: "", since: "", followUp: "" }, t.waiting); if (!t.waiting.since) t.waiting.since = App.today(); if (!t.waiting.followUp) t.waiting.followUp = App.addDays(Model.FOLLOW_UP_DAYS); }
         if (v === "cancelled") t.completedAt = new Date().toISOString(); else if (t.status === "done" || t.status === "cancelled") t.completedAt = "";
         t.status = v;
         Actions.addLog(t, `Status: ${was} → ${Model.status(v).label}`, true);
@@ -358,7 +358,7 @@
       const show = t.status === "waiting" || (t.waiting && t.waiting.personId);
       if (!show) {
         wrap.innerHTML = Model.isActive(t) ? `<button type="button" class="btn sm ghost" data-start-wait>${App.icon("hourglass", "sm")}I'm waiting on someone for this</button>` : "";
-        wrap.querySelector("[data-start-wait]")?.addEventListener("click", () => { mutate(t => { t.waiting = { personId: "", since: App.today(), followUp: App.addDays(3) }; if (t.status !== "waiting") { Actions.addLog(t, `Status: ${Model.status(t.status).label} → Waiting On Someone`, true); t.status = "waiting"; } }); q("[name=status]").value = "waiting"; setTimeout(() => wrap.querySelector("[name=waitPerson]")?.focus(), 30); });
+        wrap.querySelector("[data-start-wait]")?.addEventListener("click", () => { mutate(t => { t.waiting = { personId: "", since: App.today(), followUp: App.addDays(Model.FOLLOW_UP_DAYS) }; if (t.status !== "waiting") { Actions.addLog(t, `Status: ${Model.status(t.status).label} → Waiting On Someone`, true); t.status = "waiting"; } }); q("[name=status]").value = "waiting"; setTimeout(() => wrap.querySelector("[name=waitPerson]")?.focus(), 30); });
         return;
       }
       const w = Object.assign({ personId: "", since: "", followUp: "" }, t.waiting);
@@ -370,7 +370,7 @@
           <div class="field"><label>Since</label><input class="input" type="date" name="waitSince" value="${esc(w.since)}"></div>
           <div class="field span-2"><label>Follow up on</label>
             <div class="row wrap"><input class="input" type="date" name="waitFollow" value="${esc(w.followUp)}" style="max-width:200px">
-            <button type="button" class="chip" data-fu="1">Tomorrow</button><button type="button" class="chip" data-fu="3">In 3 days</button><button type="button" class="chip" data-fu="mon">Next Mon</button></div>
+            <button type="button" class="chip" data-fu="1">Tomorrow</button><button type="button" class="chip" data-fu="2">In 2 days</button><button type="button" class="chip" data-fu="mon">Next Mon</button></div>
           </div>
         </div>
         <div class="row wrap mt-12">
@@ -390,8 +390,8 @@
         mutate(t => { t.waiting = Object.assign({}, t.waiting, { followUp: v }); }, true);
       }));
       wrap.querySelector("[data-nudged]").addEventListener("click", () => {
-        mutate(t => { const who = Model.personName(t.waiting?.personId); Actions.addLog(t, who ? `Followed up with ${who}` : "Followed up", false); t.waiting = Object.assign({}, t.waiting, { followUp: App.addDays(3) }); });
-        App.toast("Logged · next follow-up in 3 days");
+        mutate(t => { const who = Model.personName(t.waiting?.personId); Actions.addLog(t, who ? `Followed up with ${who}` : "Followed up", false); t.waiting = Object.assign({}, t.waiting, { followUp: App.addDays(Model.FOLLOW_UP_DAYS) }); });
+        App.toast(`Logged · next follow-up in ${Model.FOLLOW_UP_DAYS} days`);
       });
       wrap.querySelector("[data-got-it]").addEventListener("click", () => {
         mutate(t => { const who = Model.personName(t.waiting?.personId); Actions.addLog(t, who ? `Got it from ${who}` : "No longer waiting", false); t.waiting = { personId: "", since: "", followUp: "" }; if (t.status === "waiting") t.status = "in_progress"; });

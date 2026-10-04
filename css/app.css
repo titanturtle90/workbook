@@ -316,6 +316,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
   font-size: 0.72rem; font-weight: 650; white-space: nowrap; background: var(--surface-2); color: var(--text-2);
 }
 .pill .ic { width: 12px; height: 12px; }
+.tcard .meta .pill { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .pill.red { background: var(--red-soft); color: var(--red); }
 .pill.orange { background: var(--orange-soft); color: var(--orange); }
 .pill.yellow { background: var(--yellow-soft); color: var(--yellow); }

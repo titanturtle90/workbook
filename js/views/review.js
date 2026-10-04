@@ -71,7 +71,7 @@
         else if (r === "week") Actions.setDue(t, App.addDays(7, t.due && t.due > today ? t.due : today));
         else if (r === "done") Actions.complete(t);
         else if (r === "cancel") Actions.setStatus(t, "cancelled");
-        else if (r === "nudged") { const c = JSON.parse(JSON.stringify(t)); const who = Model.personName(c.waiting?.personId); Actions.addLog(c, who ? `Followed up with ${who}` : "Followed up", false); c.waiting = Object.assign({}, c.waiting, { followUp: App.addDays(3) }); Store.save("tasks", c); App.toast("Logged · next follow-up in 3 days"); }
+        else if (r === "nudged") { const c = JSON.parse(JSON.stringify(t)); const who = Model.personName(c.waiting?.personId); Actions.addLog(c, who ? `Followed up with ${who}` : "Followed up", false); c.waiting = Object.assign({}, c.waiting, { followUp: App.addDays(Model.FOLLOW_UP_DAYS) }); Store.save("tasks", c); App.toast(`Logged · next follow-up in ${Model.FOLLOW_UP_DAYS} days`); }
         else if (r === "gotit") { const c = JSON.parse(JSON.stringify(t)); Actions.addLog(c, "No longer waiting", false); c.waiting = { personId: "", since: "", followUp: "" }; if (c.status === "waiting") c.status = "in_progress"; Store.save("tasks", c); }
         else if (r === "addstep") global.Editor.open(t.id, { focus: "step" });
         else if (r === "start") Actions.setStatus(t, "not_started");

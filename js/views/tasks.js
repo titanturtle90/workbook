@@ -88,15 +88,23 @@
   }
 
   // ---------- board ----------
+  // Waiting and Blocked share a column; cards keep their own status pill, and a drop moves a card to "Waiting".
+  const BOARD_COLUMNS = [
+    { keys: ["new"], drop: "new", label: "New" },
+    { keys: ["not_started"], drop: "not_started", label: "Not Started" },
+    { keys: ["in_progress"], drop: "in_progress", label: "In Progress" },
+    { keys: ["waiting", "blocked"], drop: "waiting", label: "Waiting / Blocked" },
+    { keys: ["in_review"], drop: "in_review", label: "In Review" }
+  ];
   function renderBoard(tasks) {
     const smart = Model.comparator("smart");
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
     const recentDone = [...Store.tasks.values()].filter(t => t.status === "done" && (t.completedAt || "") >= weekAgo && Model.matches(t, Object.assign({ q: query }, state.filters, { statuses: [] })));
-    const cols = Model.ACTIVE_STATUSES.filter(s => !state.filters.statuses.length || state.filters.statuses.includes(s.key)).map(s => {
-      const list = tasks.filter(t => t.status === s.key).sort(smart);
-      return `<div class="bcol" data-status="${s.key}">
-        <div class="bcol-head"><span class="dot-sw" style="background:${Model.statusDot(s.key)}"></span>${esc(s.label)}<span class="count">${list.length}</span>
-          <button type="button" class="icon-btn sm plain" style="margin-left:auto" data-add-status="${s.key}" title="Add task here">${App.icon("plus")}</button></div>
+    const cols = BOARD_COLUMNS.filter(c => !state.filters.statuses.length || c.keys.some(k => state.filters.statuses.includes(k))).map(c => {
+      const list = tasks.filter(t => c.keys.includes(t.status)).sort(smart);
+      return `<div class="bcol" data-status="${c.drop}" data-keys="${c.keys.join(" ")}">
+        <div class="bcol-head"><span class="dot-sw" style="background:${Model.statusDot(c.drop)}"></span>${esc(c.label)}<span class="count">${list.length}</span>
+          <button type="button" class="icon-btn sm plain" style="margin-left:auto" data-add-status="${c.drop}" title="Add task here">${App.icon("plus")}</button></div>
         ${list.map(t => Comp.taskCard(t, { draggable: App.isDesktop(), compact: true })).join("")}
       </div>`;
     });
@@ -119,7 +127,8 @@
       col.addEventListener("drop", e => {
         e.preventDefault(); col.classList.remove("drop-hover");
         const t = Store.tasks.get(dragId); dragId = null;
-        if (t && t.status !== col.dataset.status) Actions.setStatus(t, col.dataset.status);
+        const keys = (col.dataset.keys || col.dataset.status).split(" ");
+        if (t && !keys.includes(t.status)) Actions.setStatus(t, col.dataset.status);
       });
     });
     panel.querySelectorAll("[data-add-status]").forEach(b => b.onclick = () => global.Editor.quickAdd({ status: b.dataset.addStatus }));

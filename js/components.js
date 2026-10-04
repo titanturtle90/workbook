@@ -65,7 +65,7 @@
     if (status === "waiting") {
       t.waiting = Object.assign({ personId: "", since: "", followUp: "" }, t.waiting);
       if (!t.waiting.since) t.waiting.since = App.today();
-      if (!t.waiting.followUp) t.waiting.followUp = App.addDays(3);
+      if (!t.waiting.followUp) t.waiting.followUp = App.addDays(Model.FOLLOW_UP_DAYS);
     }
     Actions.addLog(t, `Status: ${was} → ${Model.status(status).label}`, true);
     Actions.save(t);
