@@ -77,7 +77,9 @@
     const self = defaults.self || defaults.requesterId === Model.ME;
     const reqName = self ? "Me" : (defaults.requesterId ? Model.personName(defaults.requesterId) : "");
     const projName = defaults.projectId ? Model.projectName(defaults.projectId) : "";
+    const tpls = global.Templates ? global.Templates.list() : [];
     const body = App.el(`<form class="qa" autocomplete="off">
+      ${tpls.length ? `<div class="tpl-row"><span class="label">Start from a template</span><div class="chips scroll">${tpls.slice(0, 8).map(t => `<button type="button" class="chip" data-tpl="${esc(t.id)}">${App.icon("template", "xs")}${esc(t.name)}</button>`).join("")}</div></div>` : ""}
       <div class="field"><input class="input title-input" name="title" placeholder="What's the ask?" required></div>
       <div class="form-grid mt-12">
         <div class="field"><label>Who asked</label>
@@ -95,7 +97,7 @@
           <div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${p.key === "medium" ? "on" : ""}">${p.label}</button>`).join("")}</div>
         </div>
         <div class="field"><label>How it came in</label><select class="select" name="source">${sourceOptions(self ? "self" : "")}</select></div>
-        <div class="field span-2"><label>Next step <span class="muted">(optional)</span></label><input class="input" name="step" placeholder="e.g. Pull last quarter's numbers"></div>
+        <div class="field span-2"><label>Next step <span class="muted">(optional)</span></label><input class="input" name="step" placeholder="e.g. Pull last quarter's numbers"><div class="muted tpl-steps" data-tpl-steps hidden></div></div>
         <div class="field span-2"><label>Screenshot of the request <span class="muted">(optional)</span></label>
           <div class="shots" data-shot-strip></div><div data-shot-drop></div>
         </div>
@@ -156,6 +158,24 @@
       if (statusSel.value === "waiting" && !fuCheck.checked) showFu(true);
     });
 
+    // templates: fill the form; extra steps, tags, estimate etc. are added on save
+    let tplExtra = null;
+    f.querySelectorAll("[data-tpl]").forEach(b => b.addEventListener("click", () => {
+      const tpl = Store.templates.get(b.dataset.tpl); if (!tpl) return;
+      const x = global.Templates.toTaskFields(tpl);
+      f.querySelectorAll("[data-tpl]").forEach(c => c.classList.toggle("on", c === b));
+      title.value = x.title;
+      if (x.requesterId) { req.value = Model.personName(x.requesterId); syncSelf(); }
+      if (x.projectId) proj.value = Model.projectName(x.projectId);
+      prio = x.priority; f.querySelectorAll("[data-prio] button").forEach(p => p.classList.toggle("on", p.dataset.v === prio));
+      step.value = x.steps[0] ? x.steps[0].text : "";
+      tplExtra = { tpl, steps: x.steps.slice(1), tags: x.tags, estimate: x.estimate, details: x.details, recurrence: x.recurrence };
+      const more = f.querySelector("[data-tpl-steps]");
+      more.hidden = !tplExtra.steps.length;
+      more.textContent = tplExtra.steps.length ? `+ ${App.plural(tplExtra.steps.length, "more step")} from “${tpl.name}”: ${tplExtra.steps.map(s => s.text).join(" → ")}` : "";
+      title.focus(); title.select();
+    }));
+
     let saving = false;
     const submit = async (openAfter) => {
       if (saving) return;
@@ -174,9 +194,13 @@
         source: source.value || (/^me$/i.test(req.value.trim()) ? "self" : ""),
         status: statusSel.value || "new",
         startDate: startIn.value || "",
-        steps: step.value.trim() ? [{ id: App.genId(), text: step.value.trim(), done: false }] : [],
-        log: [Actions.logEntry("Created", true)]
+        steps: (step.value.trim() ? [{ id: App.genId(), text: step.value.trim(), done: false }] : []).concat(tplExtra ? tplExtra.steps : []),
+        log: [Actions.logEntry(tplExtra ? `Created from template “${tplExtra.tpl.name}”` : "Created", true)]
       });
+      if (tplExtra) {
+        Object.assign(t, { tags: tplExtra.tags, estimate: tplExtra.estimate, details: tplExtra.details, recurrence: tplExtra.recurrence });
+        global.Templates.markUsed(tplExtra.tpl);
+      }
       if (fuCheck.checked) {
         const w = fu.read();
         t.waiting = { on: true, personId: w.personId, since: App.today(), followUp: w.followUp, note: w.note };
@@ -328,8 +352,9 @@
       <div class="ed-meta" data-meta></div>
     </div>`);
     const foot = App.el(`<div style="display:contents">
-      <button type="button" class="btn ghost" data-dup>${App.icon("copy", "sm")}Duplicate</button>
-      <button type="button" class="btn danger" data-del>${App.icon("trash", "sm")}Delete</button>
+      <button type="button" class="btn ghost foot-sm" data-dup title="Duplicate" aria-label="Duplicate">${App.icon("copy", "sm")}<span class="wide-label">Duplicate</span></button>
+      <button type="button" class="btn ghost foot-sm" data-save-tpl title="Save as template: reuse this task's steps and details for future asks" aria-label="Save as template">${App.icon("template", "sm")}<span class="wide-label">Save as template</span></button>
+      <button type="button" class="btn danger foot-sm" data-del title="Delete" aria-label="Delete">${App.icon("trash", "sm")}<span class="wide-label">Delete</span></button>
       <span class="spacer"></span>
       <button type="button" class="btn primary" data-done></button></div>`);
 
@@ -470,6 +495,7 @@
     tagInput.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === ",") && tagInput.value.trim()) { e.preventDefault(); addTag(tagInput.value); } else if (e.key === "Backspace" && !tagInput.value) { mutate(t => { t.tags = (t.tags || []).slice(0, -1); }); } });
     tagBox.addEventListener("click", e => { const b = e.target.closest("[data-del-tag]"); if (b) mutate(t => { t.tags = (t.tags || []).filter(x => x !== b.dataset.delTag); }); else tagInput.focus(); });
 
+    foot.querySelector("[data-save-tpl]").addEventListener("click", () => global.Templates.edit(null, Store.tasks.get(id)));
     foot.querySelector("[data-dup]").addEventListener("click", () => { const n = Actions.duplicate(Store.tasks.get(id)); Editor.open(n.id); App.toast("Duplicated — editing the copy"); });
     foot.querySelector("[data-del]").addEventListener("click", async () => { if (await Actions.remove(Store.tasks.get(id))) App.sheet.close(); });
     foot.querySelector("[data-done]").addEventListener("click", () => {

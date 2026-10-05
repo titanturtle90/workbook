@@ -19,6 +19,16 @@ Every task has: the ask, requester (or **Me** for self-assigned), project, due d
 
 **Screenshots:** snip the original request (e.g. `Win+Shift+S` on Windows, `Cmd+Shift+4` on Mac) and paste it with `Ctrl+V`/`Cmd+V`. Paste anywhere in Workbook to start a new task with the snip attached, or paste/drop/choose an image under **Next step** in a task. On a phone, pick from your photos or take a photo. Screenshots are shrunk to fit in Firestore (`users/{uid}/images`) and load only when you open a task; click one to see it full size.
 
+**Recently deleted:** deleting a task moves it to a bin for 30 days. Restore it, or delete it forever, from the Done page, Settings, or More on phones.
+
+**Not until:** give a task a "not until" date (`Z`, the task menu, or the form) to hide it from Today until then. It still appears if it becomes due.
+
+**Change several at once:** click **Select** (or `Ctrl`/`⌘`+click, or `V` on a highlighted task; long-press on phones), then use the bar to mark done, set status, due date, not-until, project or priority, or delete. Everything can be undone.
+
+**Swipe (phones):** swipe a card right to mark it done, left to make it due tomorrow.
+
+**Templates:** open a task and choose **Save as template**, or manage them in Settings → Task templates. Pick one at the top of the New task form to fill in the title, steps, person, project, priority, tags, estimate and repeat schedule.
+
 **Meeting mode** lets you set the meeting, default requester, project, and due date once, then type asks one after another.
 
 ## Keyboard shortcuts
@@ -35,6 +45,8 @@ Press `?` in the app for the full list.
 | `T` | Switch Today → Table → Board → Calendar | `D` | Change due date |
 | `[` | Collapse / expand the side menu |
 | `Esc` | Close | `F` | Finish the next step |
+| | | `Z` | Not until… |
+| | | `V` | Select (change several) |
 | | | `L` | Log a note |
 
 ## Setup
@@ -80,6 +92,6 @@ sw.js, manifest.json     offline + install
 firestore.rules          security rules to paste into Firebase
 ```
 
-Data lives in Firestore under `users/{uid}/tasks`, `users/{uid}/people`, `users/{uid}/projects`, `users/{uid}/images` (screenshots), and `users/{uid}/meta/settings`.
+Data lives in Firestore under `users/{uid}/tasks`, `users/{uid}/people`, `users/{uid}/projects`, `users/{uid}/images` (screenshots), `users/{uid}/templates`, `users/{uid}/trash` (Recently deleted), and `users/{uid}/meta/settings`.
 
 When you change a JS/CSS file, bump the `?v=` number in `index.html` and `sw.js` (and `CACHE_NAME`) so installed copies pick up the update.

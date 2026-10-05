@@ -89,6 +89,7 @@
           <label class="field grow"><span class="label">Sort by</span><select class="select" data-sort>${Model.SORTS.map(o => `<option value="${o.key}" ${state.sort === o.key ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select></label>
           ${state.mode === "table" ? `<label class="field grow"><span class="label">Group by</span><select class="select" data-group>${Model.GROUPS.map(g => `<option value="${g.key}" ${state.group === g.key ? "selected" : ""}>${esc(g.label)}</option>`).join("")}</select></label>` : ""}
         </div>
+        <button type="button" class="btn block ghost mt-4" data-start-select>${App.icon("check", "sm")}Select several tasks to change at once</button>
         <div class="mf-sec"><div class="label">Show</div><div class="chips"><button type="button" class="chip ${f.self === true ? "on" : ""}" data-self>${App.icon("me", "xs")}Only self-assigned</button><button type="button" class="chip ${f.hideSnoozed ? "on" : ""}" data-hide-snoozed>${App.icon("moon", "xs")}Hide snoozed</button></div></div>
         ${FILTER_KEYS.filter(([key]) => !(key === "statuses" && state.mode === "board")).map(([key, label]) => {
           const opts = filterOptions(key);
@@ -100,6 +101,7 @@
       foot.querySelector("[data-clear-all]").disabled = !activeFilterCount();
     };
     body.addEventListener("click", e => {
+      if (e.target.closest("[data-start-select]")) { App.sheet.close(); global.Bulk.start(); App.toast("Tap tasks to select them"); return; }
       const c = e.target.closest("[data-k]");
       if (c) { toggleFilter(c.dataset.k, c.dataset.v); }
       else if (e.target.closest("[data-self]")) { state.filters.self = state.filters.self === true ? null : true; persist(); }
@@ -141,7 +143,7 @@
   ];
   function rowHtml(t) {
     const n = Model.nextStep(t);
-    return `<tr class="trow ${Model.isSnoozed(t) ? "snoozed" : ""}" data-task-id="${esc(t.id)}" tabindex="-1">
+    return `<tr class="trow ${Model.isSnoozed(t) ? "snoozed" : ""}${Comp.selCls(t.id)}" data-task-id="${esc(t.id)}" tabindex="-1">
       <td class="c-check"><button type="button" class="check" data-act="toggle" title="Mark done (X)" aria-label="Mark done">${App.icon("check")}</button></td>
       <td class="c-title"><div class="t">${esc(t.title || "Untitled")}</div><div class="tags">${Comp.snoozePill(t, true)}${Comp.followPill(t)}${Comp.extrasPills(t)}${Comp.tags(t)}</div></td>
       <td class="c-who">${Comp.who(t.requesterId)}</td>
@@ -274,7 +276,7 @@
   function calChip(it, past) {
     const t = it.t;
     const cls = it.kind === "fu" ? "fu" : past ? "late" : "p-" + Model.effPriority(t).key;
-    return `<div class="cal-chip ${cls}" data-task-id="${esc(t.id)}" data-kind="${it.kind}" draggable="true" title="${esc((it.kind === "fu" ? "Follow up: " : "") + t.title)}">${it.kind === "fu" ? App.icon("hourglass", "xs") : ""}<span>${esc(t.title || "Untitled")}</span></div>`;
+    return `<div class="cal-chip ${cls}${Comp.selCls(t.id)}" data-task-id="${esc(t.id)}" data-kind="${it.kind}" draggable="true" title="${esc((it.kind === "fu" ? "Follow up: " : "") + t.title)}">${it.kind === "fu" ? App.icon("hourglass", "xs") : ""}<span>${esc(t.title || "Untitled")}</span></div>`;
   }
   function bindCalendar(panel, rerender) {
     panel.querySelectorAll("[data-cal]").forEach(b => b.onclick = () => {
@@ -327,6 +329,7 @@
         <div class="page-head">
           <div><h1>Dashboard</h1><p class="lede">${isToday ? `${esc(Views.today.greeting())} · ${App.plural(activeCount, "open task")}` : `${App.plural(tasks.length, "open task")}${anyFilter ? " match" : ""}`}</p></div>
           <div class="head-actions">
+            ${mobile ? "" : `<button class="btn sm ghost" type="button" data-select title="Select several tasks to change at once (V)">${App.icon("check", "sm")}Select</button>`}
             <button class="btn sm ghost" type="button" data-new-self title="New self-assigned task (Shift+N)" aria-label="New self-assigned task">${App.icon("me", "sm")}<span class="wide-label">Self-assigned</span></button>
             <div class="seg view-seg" role="tablist" title="Switch view (T)">
               <button type="button" data-mode="today" class="${isToday ? "on" : ""}">${App.icon("sun", "sm")}<span>Today</span></button>
@@ -343,6 +346,7 @@
         panel.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { state.mode = b.dataset.mode; persist(); rerender(); });
         panel.querySelector("[data-new]").onclick = () => global.Editor.quickAdd(isToday ? {} : { self: f.self === true, requesterId: f.requesters.length === 1 ? f.requesters[0] : "", projectId: f.projects.length === 1 ? f.projects[0] : "" });
         const ns = panel.querySelector("[data-new-self]"); if (ns) ns.onclick = () => global.Editor.quickAdd({ self: true });
+        const sel = panel.querySelector("[data-select]"); if (sel) sel.onclick = () => (global.Bulk.active ? global.Bulk.stop() : global.Bulk.start());
       };
 
       if (isToday) {

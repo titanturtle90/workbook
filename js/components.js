@@ -350,7 +350,7 @@
     opts = opts || {};
     const active = Model.isActive(t);
     const prio = Model.effPriority(t);
-    return `<div class="tcard ${active ? "" : "done"} ${Model.isSnoozed(t) ? "snoozed" : ""}" data-task-id="${esc(t.id)}" tabindex="-1" ${opts.draggable ? `draggable="true"` : ""}>
+    return `<div class="tcard ${active ? "" : "done"} ${Model.isSnoozed(t) ? "snoozed" : ""}${Comp.selCls(t.id)}" data-task-id="${esc(t.id)}" tabindex="-1" ${opts.draggable ? `draggable="true"` : ""}>
       ${active ? `<span class="prio-bar prio-${prio.key}"></span>` : ""}
       <button type="button" class="check ${active ? "" : "on"}" data-act="toggle" aria-label="${active ? "Mark done" : "Reopen"}" title="${active ? "Mark done (X)" : "Reopen"}">${App.icon("check")}</button>
       <div class="body">
@@ -375,9 +375,14 @@
   Comp.bindTasks = (root) => {
     if (root._wbBound) return;
     root._wbBound = true;
+    if (global.Bulk) global.Bulk.bindLongPress(root);
+    Comp.bindSwipe(root);
     root.addEventListener("click", e => {
       const host = e.target.closest("[data-task-id]");
       if (!host || !root.contains(host)) return;
+      // a long-press (or swipe) just happened on this list: swallow the click it produces
+      if (root._suppressClick && Date.now() - root._suppressClick < 350) { root._suppressClick = 0; e.preventDefault(); e.stopPropagation(); return; }
+      if (global.Bulk && global.Bulk.handleClick(e, host)) return;
       const t = Store.tasks.get(host.dataset.taskId);
       if (!t) return;
       const actEl = e.target.closest("[data-act]");
@@ -403,6 +408,73 @@
       Actions.moreMenu({ x: e.clientX, y: e.clientY }, t);
     });
   };
+
+  /**
+   * Phones: swipe a task card right to mark it done, left to make it due tomorrow.
+   * Cards allow vertical scrolling only (touch-action: pan-y), so sideways drags reach us.
+   */
+  const SWIPE_ARM = 90; // px before letting go triggers the action
+  Comp.bindSwipe = root => {
+    let s = null;
+    const reset = () => {
+      if (!s) return;
+      const { card, bg } = s;
+      card.style.transition = "transform 0.2s var(--ease)"; card.style.transform = "";
+      setTimeout(() => { card.style.transition = ""; card.classList.remove("swiping"); bg.remove(); }, 210);
+      s = null;
+    };
+    root.addEventListener("touchstart", e => {
+      const card = e.target.closest(".tcard");
+      if (!card || !root.contains(card) || card.closest(".board") || e.touches.length > 1) return;
+      if ((global.Bulk && global.Bulk.active) || !Model.isActive(Store.tasks.get(card.dataset.taskId) || {})) return;
+      s = { card, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, mode: null, bg: null };
+    }, { passive: true });
+    root.addEventListener("touchmove", e => {
+      if (!s) return;
+      const dx = e.touches[0].clientX - s.x, dy = e.touches[0].clientY - s.y;
+      if (!s.mode) {
+        if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+          s.mode = "swipe";
+          const card = s.card, parent = card.offsetParent || card.parentElement;
+          const bg = document.createElement("div");
+          bg.className = "swipe-bg";
+          bg.innerHTML = `<span class="sw-done">${App.icon("check")}Done</span><span class="sw-tmrw">${App.icon("calendar")}Tomorrow</span>`;
+          bg.style.cssText = `top:${card.offsetTop}px;left:${card.offsetLeft}px;width:${card.offsetWidth}px;height:${card.offsetHeight}px`;
+          if (getComputedStyle(parent).position === "static") parent.style.position = "relative";
+          card.before(bg);
+          card.classList.add("swiping");
+          s.bg = bg;
+        } else if (Math.abs(dy) > 12) { s = null; return; }
+        else return;
+      }
+      s.dx = dx;
+      s.card.style.transform = `translateX(${dx}px)`;
+      s.bg.classList.toggle("right", dx > 0);
+      s.bg.classList.toggle("left", dx < 0);
+      s.bg.classList.toggle("armed", Math.abs(dx) > SWIPE_ARM);
+    }, { passive: true });
+    const end = () => {
+      if (!s) return;
+      if (s.mode !== "swipe") { s = null; return; }
+      root._suppressClick = Date.now(); // the lift shouldn't also open the task
+      const { card, bg, dx } = s;
+      const t = Store.tasks.get(card.dataset.taskId);
+      if (Math.abs(dx) <= SWIPE_ARM || !t) { reset(); return; }
+      card.style.transition = "transform 0.18s ease-in";
+      card.style.transform = `translateX(${dx > 0 ? "110%" : "-110%"})`;
+      s = null;
+      setTimeout(() => {
+        if (dx > 0) Actions.complete(t); else Actions.setDue(t, App.addDays(1));
+        // if the list doesn't re-render (e.g. the card stays put), put it back
+        setTimeout(() => { if (card.isConnected) { card.style.transition = ""; card.style.transform = ""; card.classList.remove("swiping"); } bg.remove(); }, 60);
+      }, 170);
+    };
+    root.addEventListener("touchend", end, { passive: true });
+    root.addEventListener("touchcancel", () => { if (s && s.mode === "swipe") reset(); else s = null; }, { passive: true });
+  };
+
+  /** " selected" when the task is part of a bulk selection (keeps highlights across re-renders). */
+  Comp.selCls = id => (global.Bulk && global.Bulk.has(id) ? " selected" : "");
 
   Comp.emptyInline = text => `<div class="empty-inline">${esc(text)}</div>`;
 

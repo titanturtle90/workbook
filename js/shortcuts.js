@@ -17,7 +17,7 @@
     ]],
     ["Selected task", [
       [["J"], "Next task (or ↓)"], [["K"], "Previous task (or ↑)"], [["Enter"], "Open"], [["X"], "Mark done / reopen"],
-      [["S"], "Change status (then 1–8)"], [["P"], "Cycle priority"], [["D"], "Change due date"], [["Z"], "Not until… (hide from Today)"], [["F"], "Finish the next step"],
+      [["S"], "Change status (then 1–8)"], [["P"], "Cycle priority"], [["D"], "Change due date"], [["Z"], "Not until… (hide from Today)"], [["V"], "Select / unselect (change several at once)"], [["F"], "Finish the next step"],
       [["L"], "Log a note"], [["Del"], "Delete"]
     ]],
     ["In a form", [
@@ -70,6 +70,7 @@
       return;
     }
     if (App.dialogOpen()) return;
+    if (global.Bulk && global.Bulk.active && e.key === "Escape" && !App.sheet.isOpen()) { e.preventDefault(); global.Bulk.stop(); return; }
 
     if (App.sheet.isOpen()) {
       if (e.key === "Escape") {
@@ -105,6 +106,7 @@
     else if (k === "s") { handled(); Actions.statusMenu(anchor, t, { keyboard: true }); }
     else if (k === "p") { handled(); Actions.cyclePriority(t); }
     else if (k === "d") { handled(); Actions.dueMenu(anchor, t, { keyboard: true }); }
+    else if (k === "v") { handled(); global.Bulk.toggle(t.id); }
     else if (k === "z") { handled(); Actions.snoozeMenu(anchor, t, { keyboard: true }); }
     else if (k === "f") { handled(); const n = Model.nextStep(t); if (n) Actions.completeStep(t, n.id); else App.toast("No open steps on this task"); }
     else if (k === "l") { handled(); global.Editor.open(t.id, { focus: "log" }); }

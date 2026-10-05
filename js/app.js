@@ -99,6 +99,7 @@
       <button type="button" class="mrow" data-go="review">${App.icon("review")}<div class="grow"><div>Weekly review ${c.reviewDue ? `<span class="pill orange" style="margin-left:6px">Due</span>` : ""}</div><div class="sub">Wins, slips, follow-ups, next week</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="meeting">${App.icon("meeting")}<div class="grow"><div>Meeting mode</div><div class="sub">Capture several asks quickly</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="self">${App.icon("me")}<div class="grow"><div>New self-assigned task</div><div class="sub">Something you're asking of yourself</div></div>${App.icon("right", "sm")}</button>
+      <button type="button" class="mrow" data-a="templates">${App.icon("template")}<div class="grow"><div>Task templates</div><div class="sub">${Store.templates.size ? App.plural(Store.templates.size, "template") : "Reusable checklists"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow"><div>Recently deleted</div><div class="sub">${Store.trash.size ? App.plural(Store.trash.size, "task") + " · kept 30 days" : "Empty"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="export">${App.icon("download")}<div class="grow"><div>Export &amp; reports</div><div class="sub">Excel, monthly summary, backup</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="settings">${App.icon("settings")}<div class="grow"><div>Settings</div><div class="sub">Theme, capacity, account</div></div>${App.icon("right", "sm")}</button>
@@ -119,6 +120,7 @@
     else if (a === "settings") Settings.open();
     else if (a === "search") Router.go("tasks", { focusSearch: true });
     else if (a === "trash") global.Actions.openTrash();
+    else if (a === "templates") global.Templates.manage();
   }
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-action]"); if (!b) return;
@@ -201,6 +203,7 @@
       <div class="mt-16">
         <button type="button" class="mrow" data-a="shortcuts">${App.icon("keyboard")}<div class="grow">Keyboard shortcuts</div>${App.icon("right", "sm")}</button>
         <button type="button" class="mrow" data-a="export">${App.icon("download")}<div class="grow">Export &amp; reports</div>${App.icon("right", "sm")}</button>
+        <button type="button" class="mrow" data-a="templates">${App.icon("template")}<div class="grow">Task templates${Store.templates.size ? ` <span class="muted">(${Store.templates.size})</span>` : ""}</div>${App.icon("right", "sm")}</button>
         <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow">Recently deleted${Store.trash.size ? ` <span class="muted">(${Store.trash.size})</span>` : ""}</div>${App.icon("right", "sm")}</button>
       </div>
       <p class="muted mt-16" style="font-size:.75rem">Workbook v1</p>

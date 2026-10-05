@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=13">
+<link rel="stylesheet" href="css/app.css?v=16">
 <script>
   // Apply the saved theme before first paint so there's no flash.
   try { var t = JSON.parse(localStorage.getItem("wb:theme")); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
@@ -70,6 +70,7 @@
     <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="m15 10-2 2 2 2"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></symbol>
+    <symbol id="i-template" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
     <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></symbol>
     <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></symbol>
@@ -160,21 +161,23 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=13"></script>
-<script src="js/core.js?v=13"></script>
-<script src="js/model.js?v=13"></script>
-<script src="js/store.js?v=13"></script>
-<script src="js/components.js?v=13"></script>
-<script src="js/shots.js?v=13"></script>
-<script src="js/editor.js?v=13"></script>
-<script src="js/views/today.js?v=13"></script>
-<script src="js/views/tasks.js?v=13"></script>
-<script src="js/views/people.js?v=13"></script>
-<script src="js/views/projects.js?v=13"></script>
-<script src="js/views/done.js?v=13"></script>
-<script src="js/views/review.js?v=13"></script>
-<script src="js/export.js?v=13"></script>
-<script src="js/shortcuts.js?v=13"></script>
-<script src="js/app.js?v=13"></script>
+<script src="js/firebase-config.js?v=16"></script>
+<script src="js/core.js?v=16"></script>
+<script src="js/model.js?v=16"></script>
+<script src="js/store.js?v=16"></script>
+<script src="js/components.js?v=16"></script>
+<script src="js/shots.js?v=16"></script>
+<script src="js/bulk.js?v=16"></script>
+<script src="js/editor.js?v=16"></script>
+<script src="js/templates.js?v=16"></script>
+<script src="js/views/today.js?v=16"></script>
+<script src="js/views/tasks.js?v=16"></script>
+<script src="js/views/people.js?v=16"></script>
+<script src="js/views/projects.js?v=16"></script>
+<script src="js/views/done.js?v=16"></script>
+<script src="js/views/review.js?v=16"></script>
+<script src="js/export.js?v=16"></script>
+<script src="js/shortcuts.js?v=16"></script>
+<script src="js/app.js?v=16"></script>
 </body>
 </html>
