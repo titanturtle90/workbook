@@ -49,7 +49,7 @@
         .map(id => ({ value: id, label: id ? Model.projectName(id) || "Unknown" : "No project", swatch: id ? Model.project(id)?.color || "#999" : "", count: counts.get(id), on: f.projects.includes(id) }));
     }
     if (key === "statuses") return Model.ACTIVE_STATUSES.map(st => ({ value: st.key, label: st.label, dot: Model.statusDot(st.key), on: f.statuses.includes(st.key) }));
-    if (key === "priorities") return [{ key: "urgent", label: "Urgent" }].concat(Model.PRIORITIES).map(p => ({ value: p.key, label: p.label, on: f.priorities.includes(p.key) }));
+    if (key === "priorities") return [{ key: "urgent", label: "Urgent" }].concat(Model.PRIORITIES).map(p => ({ value: p.key, label: p.label, dot: Model.priorityDot(p.key), on: f.priorities.includes(p.key) }));
     if (key === "due") return DUE_CHOICES.map(([v, l]) => ({ value: v, label: l, on: f.due === v }));
     if (key === "tags") return Model.allTags().map(tag => ({ value: tag, label: "#" + tag, on: f.tags.includes(tag) }));
     return [];
@@ -67,7 +67,7 @@
     const opts = filterOptions(key);
     let items = opts.map(o => ({
       label: o.label, k: o.count != null ? String(o.count) : "", on: o.on,
-      icon: o.swatch ? `<span class="dot-sw" style="background:${esc(o.swatch)}"></span>` : o.dot ? `<span class="dot-sw" style="background:${o.dot};border-radius:50%"></span>` : key === "priorities" ? "flag" : null,
+      icon: o.swatch ? `<span class="dot-sw" style="background:${esc(o.swatch)}"></span>` : o.dot ? `<span class="dot-sw" style="background:${o.dot};border-radius:50%"></span>` : null,
       onClick: () => { toggleFilter(key, o.value); rerender(); }
     }));
     if (key === "due") items.unshift({ label: "Any time", on: !state.filters.due, onClick: () => { clearFilter("due"); rerender(); } });
@@ -83,7 +83,7 @@
     App.sheet.open({ title: "Sort & filter", body, foot });
     const paint = () => {
       const f = state.filters;
-      const chip = (key, o) => `<button type="button" class="chip ${o.on ? "on" : ""}" data-k="${key}" data-v="${esc(o.value)}">${o.swatch ? `<span class="swatch" style="background:${esc(o.swatch)}"></span>` : ""}${esc(o.label)}${o.count != null ? ` <span class="cnt">${o.count}</span>` : ""}</button>`;
+      const chip = (key, o) => `<button type="button" class="chip ${o.on ? "on" : ""}" data-k="${key}" data-v="${esc(o.value)}">${o.swatch ? `<span class="swatch" style="background:${esc(o.swatch)}"></span>` : o.dot ? `<span class="swatch" style="background:${o.dot};border-radius:50%"></span>` : ""}${esc(o.label)}${o.count != null ? ` <span class="cnt">${o.count}</span>` : ""}</button>`;
       body.innerHTML = `
         <div class="mf-row" ${state.mode === "calendar" ? "hidden" : ""}>
           <label class="field grow"><span class="label">Sort by</span><select class="select" data-sort>${Model.SORTS.map(o => `<option value="${o.key}" ${state.sort === o.key ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select></label>

@@ -193,6 +193,11 @@
       <div class="field mt-16"><label>Appearance</label>
         <div class="seg">${[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]].map(([v, l]) => `<button type="button" data-theme="${v}" class="${theme === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
+      <div class="field mt-16"><label>Color key</label>
+        <div class="color-key"><span class="muted" style="font-size:.78rem;width:64px">Status</span>${Model.ACTIVE_STATUSES.concat(Model.status("done")).map(st => `<span class="pill ${st.color}">${App.esc(st.short || st.label)}</span>`).join("")}</div>
+        <div class="color-key"><span class="muted" style="font-size:.78rem;width:64px">Priority</span>${[{ key: "urgent", label: "Urgent", color: "pr-urgent" }].concat(Model.PRIORITIES).map(p => `<span class="pill ${p.color}">${App.icon(p.key === "urgent" ? "bolt" : "flag")}${p.label}</span>`).join("")}</div>
+        <span class="muted" style="font-size:.78rem">Urgent is set automatically when something is due within a day.</span>
+      </div>
       <div class="field mt-16"><label>Dashboard opens on</label>
         <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["board", "Board"], ["calendar", "Calendar"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:dashStart", "last") === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>

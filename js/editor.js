@@ -92,7 +92,7 @@
           <div class="quick-dates">${quickDateChips("data-date")}</div>
         </div>
         ${startField(defaults.startDate)}
-        <div class="field"><label>Status</label><select class="select" name="status">${Model.ACTIVE_STATUSES.map(st => `<option value="${st.key}" ${(defaults.status || "new") === st.key ? "selected" : ""}>${esc(st.label)}</option>`).join("")}</select></div>
+        <div class="field"><label>Status</label><select class="select" name="status" data-st>${Model.ACTIVE_STATUSES.map(st => `<option value="${st.key}" ${(defaults.status || "new") === st.key ? "selected" : ""}>${esc(st.label)}</option>`).join("")}</select></div>
         <div class="field"><label>Priority</label>
           <div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${p.key === "medium" ? "on" : ""}">${p.label}</button>`).join("")}</div>
         </div>
@@ -148,6 +148,8 @@
 
     // status + follow-up
     const statusSel = f.querySelector("[name=status]");
+    const colorStatus = () => statusSel.style.setProperty("--st-color", Model.statusDot(statusSel.value));
+    statusSel.addEventListener("change", colorStatus); colorStatus();
     const fuCheck = f.querySelector("[name=fu]");
     const fuBox = f.querySelector("[data-fu-box]");
     const fu = bindFollowUpFields(fuBox);
@@ -297,7 +299,7 @@
     const body = App.el(`<div class="editor">
       <textarea class="input title-input" rows="1" name="title" placeholder="What's the ask?" style="min-height:46px;resize:none">${esc(t.title)}</textarea>
       <div class="row wrap mt-12">
-        <select class="select" name="status" style="width:auto;min-width:190px">${Model.STATUSES.map(s => `<option value="${s.key}" ${t.status === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select>
+        <select class="select" name="status" data-st style="width:auto;min-width:190px">${Model.STATUSES.map(s => `<option value="${s.key}" ${t.status === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select>
         <div class="seg" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${t.priority === p.key ? "on" : ""}">${p.label}</button>`).join("")}</div>
         <span data-eff></span>
       </div>
@@ -571,6 +573,7 @@
       const eff = Model.effPriority(t);
       q("[data-eff]").innerHTML = eff.bumped ? `<span class="pill ${eff.color}" title="Raised automatically because the due date is close">${App.icon("bolt")}${esc(eff.label)} (due soon)</span>` : "";
       if (document.activeElement !== q("[name=status]")) q("[name=status]").value = t.status;
+      q("[name=status]").style.setProperty("--st-color", Model.statusDot(q("[name=status]").value));
       body.querySelectorAll("[data-date]").forEach(b => b.classList.toggle("on", b.dataset.date === t.due));
       if (document.activeElement !== due) due.value = t.due || "";
       body.querySelectorAll("[data-start]").forEach(b => b.classList.toggle("on", b.dataset.start === t.startDate));

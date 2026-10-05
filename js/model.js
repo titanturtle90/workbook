@@ -8,20 +8,20 @@
   const App = global.App;
 
   const STATUSES = [
-    { key: "new", label: "New", color: "blue" },
-    { key: "not_started", label: "Not Started", color: "gray" },
-    { key: "in_progress", label: "In Progress", color: "accent" },
-    { key: "waiting", label: "Waiting On Someone", short: "Waiting", color: "orange" },
-    { key: "in_review", label: "In Review", color: "purple" },
-    { key: "blocked", label: "Blocked", color: "red" },
-    { key: "done", label: "Done", color: "green" },
-    { key: "cancelled", label: "Cancelled", color: "gray" }
+    // `color` is the pill class; each status has its own color (see "Color key" in app.css)
+    { key: "new", label: "New", color: "st st-new" },
+    { key: "not_started", label: "Not Started", color: "st st-not_started" },
+    { key: "in_progress", label: "In Progress", color: "st st-in_progress" },
+    { key: "waiting", label: "Waiting On Someone", short: "Waiting", color: "st st-waiting" },
+    { key: "in_review", label: "In Review", color: "st st-in_review" },
+    { key: "blocked", label: "Blocked", color: "st st-blocked" },
+    { key: "done", label: "Done", color: "st st-done" },
+    { key: "cancelled", label: "Cancelled", color: "st st-cancelled" }
   ];
-  const STATUS_DOT = { blue: "var(--blue)", gray: "var(--gray)", accent: "var(--accent)", orange: "var(--orange)", purple: "var(--purple)", red: "var(--red)", green: "var(--green)" };
   const PRIORITIES = [
-    { key: "high", label: "High", rank: 3, color: "orange" },
-    { key: "medium", label: "Medium", rank: 2, color: "blue" },
-    { key: "low", label: "Low", rank: 1, color: "gray" }
+    { key: "high", label: "High", rank: 3, color: "pr-high" },
+    { key: "medium", label: "Medium", rank: 2, color: "pr-medium" },
+    { key: "low", label: "Low", rank: 1, color: "pr-low" }
   ];
   const SOURCES = [
     { key: "email", label: "Email", icon: "mail" },
@@ -46,7 +46,8 @@
   Model.FOLLOW_UP_DAYS = 2; // default gap before nudging someone you are waiting on
   Model.ACTIVE_STATUSES = STATUSES.filter(s => s.key !== "done" && s.key !== "cancelled");
   Model.status = key => STATUSES.find(s => s.key === key) || STATUSES[0];
-  Model.statusDot = key => STATUS_DOT[Model.status(key).color];
+  Model.statusDot = key => `var(--st-${Model.status(key).key})`;
+  Model.priorityDot = key => key === "urgent" ? "var(--pr-urgent-bg)" : `var(--pr-${key})`;
   Model.priority = key => PRIORITIES.find(p => p.key === key) || PRIORITIES[1];
   Model.source = key => SOURCES.find(s => s.key === key);
   Model.recurrence = key => RECURRENCE.find(r => r.key === (key || "")) || RECURRENCE[0];
@@ -116,7 +117,7 @@
   Model.effPriority = t => {
     const r = Model.effRank(t);
     const bumped = r > Model.priority(t.priority).rank;
-    if (r === 4) return { key: "urgent", label: "Urgent", color: "red", bumped };
+    if (r === 4) return { key: "urgent", label: "Urgent", color: "pr-urgent", bumped };
     const p = PRIORITIES.find(x => x.rank === r);
     return { key: p.key, label: p.label, color: p.color, bumped };
   };

@@ -241,7 +241,7 @@
   };
   Actions.priorityMenu = (anchor, task, opts) => {
     App.menu.open(anchor, [{ header: "Priority" }].concat(Model.PRIORITIES.map(p => ({
-      label: p.label, on: task.priority === p.key, icon: "flag",
+      label: p.label, on: task.priority === p.key, icon: `<span class="dot-sw" style="background:${Model.priorityDot(p.key)};border-radius:50%"></span>`,
       onClick: () => Actions.setPriority(Store.tasks.get(task.id), p.key)
     }))), opts);
   };
@@ -318,7 +318,7 @@
     const when = t.waiting.followUp ? ` · ${App.relDueLower(t.waiting.followUp)}` : "";
     const label = t.status === "waiting" ? (who ? `On ${who}` : "Waiting") + (t.waiting.followUp ? ` · nudge ${App.relDueLower(t.waiting.followUp)}` : "")
       : `Follow up${who ? ` with ${who}` : ""}${when}`;
-    return `<span class="pill ${due ? "red" : "orange"}" ${t.waiting.note ? `title="${esc(t.waiting.note)}"` : ""}>${App.icon("hourglass")}${esc(label)}</span>`;
+    return `<span class="pill ${due ? "red" : "fu"}" ${t.waiting.note ? `title="${esc(t.waiting.note)}"` : ""}>${App.icon("hourglass")}${esc(label)}</span>`;
   };
   Comp.snoozePill = (t, clickable) => {
     if (!Model.isSnoozed(t)) return "";
@@ -359,7 +359,7 @@
         <div class="meta">
           ${opts.hideRequester ? "" : (t.requesterId ? `<span class="who">${Comp.avatar(t.requesterId)}${esc(Model.requesterName(t))}</span>` : "")}
           ${Comp.duePill(t, active)}
-          ${active ? Comp.statusPill(t, true) : `<span class="pill green">${App.icon("check")}${esc(t.status === "cancelled" ? "Cancelled" : "Done " + (t.completedAt ? App.fmtIso(t.completedAt) : ""))}</span>`}
+          ${active ? Comp.statusPill(t, true) : `<span class="pill st ${t.status === "cancelled" ? "st-cancelled" : "st-done"}">${App.icon("check")}${esc(t.status === "cancelled" ? "Cancelled" : "Done " + (t.completedAt ? App.fmtIso(t.completedAt) : ""))}</span>`}
           ${active ? Comp.prioPill(t, false) : ""}
           ${opts.hideProject ? "" : Comp.projectPill(t.projectId)}
           ${active ? Comp.snoozePill(t, true) : ""}

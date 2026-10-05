@@ -861,3 +861,101 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
   .sheet-foot .foot-sm { flex: 0 0 auto; padding: 0 12px; }
   .sheet-foot .foot-sm .wide-label { display: none; }
 }
+
+/* ==========================================================================
+   Color key: statuses (cool, with a dot) and priorities (warm heat scale, with a flag)
+   ========================================================================== */
+:root {
+  --st-new: #0369a1;          --st-new-bg: #e0f2fe;
+  --st-not_started: #64748b;  --st-not_started-bg: #eef1f5;
+  --st-in_progress: #4338ca;  --st-in_progress-bg: #e0e7ff;
+  --st-waiting: #7e22ce;      --st-waiting-bg: #f3e8ff;
+  --st-in_review: #0f766e;    --st-in_review-bg: #ccfbf1;
+  --st-blocked: #be185d;      --st-blocked-bg: #fce7f3;
+  --st-done: #15803d;         --st-done-bg: #dcfce7;
+  --st-cancelled: #6b7280;    --st-cancelled-bg: #f3f4f6;
+  --pr-urgent: #dc2626;       --pr-urgent-bg: #dc2626;  --pr-urgent-fg: #ffffff;
+  --pr-high: #c2410c;         --pr-high-bg: #ffedd5;
+  --pr-medium: #a16207;       --pr-medium-bg: #fef3c7;
+  --pr-low: #64748b;          --pr-low-bg: #f1f5f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --st-new: #7cc4f0;          --st-new-bg: #0f2a3d;
+    --st-not_started: #a3b1c4;  --st-not_started-bg: #1c2638;
+    --st-in_progress: #a5b4fc;  --st-in_progress-bg: #1e1f4b;
+    --st-waiting: #d0a6ff;      --st-waiting-bg: #2a1840;
+    --st-in_review: #5eead4;    --st-in_review-bg: #0f2e2b;
+    --st-blocked: #f9a8d4;      --st-blocked-bg: #3a1428;
+    --st-done: #86efac;         --st-done-bg: #12301e;
+    --st-cancelled: #9ca3af;    --st-cancelled-bg: #1f2430;
+    --pr-urgent: #f87171;       --pr-urgent-bg: #dc2626;  --pr-urgent-fg: #ffffff;
+    --pr-high: #fdba74;         --pr-high-bg: #3b2210;
+    --pr-medium: #fcd34d;       --pr-medium-bg: #33290d;
+    --pr-low: #94a3b8;          --pr-low-bg: #1c2638;
+  }
+}
+:root[data-theme="dark"] {
+  --st-new: #7cc4f0;          --st-new-bg: #0f2a3d;
+  --st-not_started: #a3b1c4;  --st-not_started-bg: #1c2638;
+  --st-in_progress: #a5b4fc;  --st-in_progress-bg: #1e1f4b;
+  --st-waiting: #d0a6ff;      --st-waiting-bg: #2a1840;
+  --st-in_review: #5eead4;    --st-in_review-bg: #0f2e2b;
+  --st-blocked: #f9a8d4;      --st-blocked-bg: #3a1428;
+  --st-done: #86efac;         --st-done-bg: #12301e;
+  --st-cancelled: #9ca3af;    --st-cancelled-bg: #1f2430;
+  --pr-urgent: #f87171;       --pr-urgent-bg: #dc2626;  --pr-urgent-fg: #ffffff;
+  --pr-high: #fdba74;         --pr-high-bg: #3b2210;
+  --pr-medium: #fcd34d;       --pr-medium-bg: #33290d;
+  --pr-low: #94a3b8;          --pr-low-bg: #1c2638;
+}
+
+/* status pills: colored dot + tint */
+.pill.st { gap: 6px; }
+.pill.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.pill.st-new { color: var(--st-new); background: var(--st-new-bg); }
+.pill.st-not_started { color: var(--st-not_started); background: var(--st-not_started-bg); }
+.pill.st-in_progress { color: var(--st-in_progress); background: var(--st-in_progress-bg); }
+.pill.st-waiting { color: var(--st-waiting); background: var(--st-waiting-bg); }
+.pill.st-in_review { color: var(--st-in_review); background: var(--st-in_review-bg); }
+.pill.st-blocked { color: var(--st-blocked); background: var(--st-blocked-bg); }
+.pill.st-done { color: var(--st-done); background: var(--st-done-bg); }
+.pill.st-cancelled { color: var(--st-cancelled); background: var(--st-cancelled-bg); text-decoration: line-through; }
+
+/* priority pills: flag + heat scale; Urgent is solid so it jumps out */
+.pill.pr-urgent { color: var(--pr-urgent-fg); background: var(--pr-urgent-bg); }
+.pill.pr-high { color: var(--pr-high); background: var(--pr-high-bg); }
+.pill.pr-medium { color: var(--pr-medium); background: var(--pr-medium-bg); }
+.pill.pr-low { color: var(--pr-low); background: var(--pr-low-bg); }
+
+/* the stripe on the left of each card follows the priority */
+.prio-urgent { background: var(--pr-urgent-bg); }
+.prio-high { background: var(--pr-high); }
+.prio-medium { background: var(--pr-medium); }
+.prio-low { background: var(--surface-3); }
+
+/* calendar chips + dots follow the priority too */
+.cal-chip.p-urgent { border-left-color: var(--pr-urgent-bg); }
+.cal-chip.p-high { border-left-color: var(--pr-high); }
+.cal-chip.p-medium { border-left-color: var(--pr-medium); }
+.cal-dots .p-urgent { background: var(--pr-urgent-bg); }
+.cal-dots .p-high { background: var(--pr-high); }
+.cal-dots span:not([class]), .cal-dots .p-medium { background: var(--pr-medium); }
+.cal-dots .p-low { background: var(--pr-low); }
+.cal-chip.fu { border-left-color: var(--st-waiting); color: var(--st-waiting); }
+.cal-dots .fu { background: var(--st-waiting); }
+
+/* follow-up / waiting pill uses the Waiting purple; red once it's due */
+.pill.fu { color: var(--st-waiting); background: var(--st-waiting-bg); }
+
+/* editor + quick add: the status menu and priority switch show their color */
+.select[data-st] { border-left: 5px solid var(--st-color, var(--border-strong)); }
+.seg[data-prio] button.on[data-v="high"] { color: var(--pr-high); }
+.seg[data-prio] button.on[data-v="medium"] { color: var(--pr-medium); }
+.seg[data-prio] button.on[data-v="low"] { color: var(--pr-low); }
+.seg[data-prio] button.on[data-v="high"]::before, .seg[data-prio] button.on[data-v="medium"]::before, .seg[data-prio] button.on[data-v="low"]::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+}
+
+/* color key (Settings) */
+.color-key { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }

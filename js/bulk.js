@@ -128,7 +128,7 @@
       })), projects.length ? [{ sep: true }] : [], [{ label: "No project", icon: "x", onClick: () => apply(t => { t.projectId = ""; }, k => `${n(k, "removed")} from projects`) }]));
     } else if (kind === "priority") {
       App.menu.open(anchor, [{ header: "Set priority" }].concat(Model.PRIORITIES.map(p => ({
-        label: p.label, icon: "flag", onClick: () => apply(t => { t.priority = p.key; }, k => `${n(k, "set")} to ${p.label} priority`)
+        label: p.label, icon: `<span class="dot-sw" style="background:${Model.priorityDot(p.key)};border-radius:50%"></span>`, onClick: () => apply(t => { t.priority = p.key; }, k => `${n(k, "set")} to ${p.label} priority`)
       }))));
     }
   }
