@@ -452,7 +452,8 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .pcard .top { display: flex; align-items: center; gap: 10px; }
 .pcard .name { font-weight: 700; font-size: 0.98rem; }
 .pcard .role { font-size: 0.8rem; color: var(--text-3); }
-.pcard .nums { display: flex; gap: 14px; font-size: 0.78rem; color: var(--text-2); flex-wrap: wrap; }
+.pcard .nums { display: flex; align-items: baseline; gap: 4px 14px; font-size: 0.78rem; color: var(--text-2); flex-wrap: wrap; }
+.pcard .next-due { display: flex; }
 .pcard .nums b { font-size: 0.95rem; color: var(--text); font-variant-numeric: tabular-nums; }
 .pcard .nums .alert b { color: var(--red); }
 .progress { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }

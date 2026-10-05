@@ -37,13 +37,17 @@
     setTimeout(() => body.querySelector("[name=name]").focus(), 80);
   };
 
+  // Same colors as task due dates: red overdue, orange today, yellow tomorrow.
+  const dueTone = d => { const n = App.daysUntil(d); return n < 0 ? "red" : n === 0 ? "orange" : n === 1 ? "yellow" : "gray"; };
+
   function card(p) {
     const s = statsFor(p.id);
     const pct = s.total ? Math.round(100 * s.done / s.total) : 0;
     return `<button type="button" class="pcard" data-project="${esc(p.id)}">
       <div class="proj-head"><span class="sw" style="background:${esc(p.color)}"></span><span class="name grow">${esc(p.name)}</span><span class="muted" style="font-size:.8rem">${pct}%</span></div>
       <div class="progress"><div style="width:${pct}%;background:${esc(p.color)}"></div></div>
-      <div class="nums"><span><b>${s.open}</b> open</span><span><b>${s.done}</b> done</span>${s.overdue ? `<span class="alert"><b>${s.overdue}</b> overdue</span>` : ""}${s.nextDue ? `<span>next due <b style="font-size:.8rem">${esc(App.relDue(s.nextDue))}</b></span>` : ""}</div>
+      <div class="nums"><span><b>${s.open}</b> open</span><span><b>${s.done}</b> done</span>${s.overdue ? `<span class="alert"><b>${s.overdue}</b> overdue</span>` : ""}</div>
+      ${s.nextDue ? `<div class="next-due"><span class="pill ${dueTone(s.nextDue)}">${App.icon("calendar")}Next due ${esc(App.relDueLower(s.nextDue))}</span></div>` : ""}
     </button>`;
   }
 
