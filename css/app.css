@@ -255,9 +255,9 @@ kbd {
 .icon-btn.plain:hover { background: var(--surface-2); }
 .icon-btn.danger { color: var(--red); }
 
-.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg { display: inline-flex; align-items: stretch; background: var(--surface-2); border-radius: 11px; padding: 4px; gap: 2px; }
 .seg button { min-height: 32px; padding: 0 12px; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; }
-.seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--border-strong); } /* even ring, no drop shadow eating the bottom gap */
 .seg.full { display: flex; } .seg.full button { flex: 1; justify-content: center; }
 
 /* ---------- inputs ---------- */
@@ -666,3 +666,11 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 @media (min-width: 900px) { .pbanner { height: 240px; } }
 .pdesc-full { color: var(--text-2); font-size: 0.92rem; line-height: 1.5; white-space: pre-wrap; max-width: 760px; margin-bottom: 4px; }
 .shot.wide { width: 220px; height: 130px; }
+
+/* Phones: keep Self-assigned, the view switcher and New on one row */
+@media (max-width: 599px) {
+  .head-actions .wide-label { display: none; }
+  .head-actions [data-new-self] { padding: 0 9px; }
+  .head-actions .seg button { padding: 0 10px; }
+  #panel-tasks .head-actions [data-new] { display: none; } /* the floating + button does this on phones */
+}

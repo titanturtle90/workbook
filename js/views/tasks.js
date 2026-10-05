@@ -152,12 +152,12 @@
         <div class="page-head">
           <div><h1>Dashboard</h1><p class="lede">${isToday ? `${esc(Views.today.greeting())} · ${App.plural(activeCount, "open task")}` : `${App.plural(tasks.length, "open task")}${anyFilter ? " match" : ""}`}</p></div>
           <div class="head-actions">
+            <button class="btn sm ghost" type="button" data-new-self title="New self-assigned task (Shift+N)" aria-label="New self-assigned task">${App.icon("me", "sm")}<span class="wide-label">Self-assigned</span></button>
             <div class="seg" role="tablist" title="Switch view (T)">
               <button type="button" data-mode="today" class="${isToday ? "on" : ""}">${App.icon("sun", "sm")}Today</button>
               <button type="button" data-mode="table" class="${state.mode === "table" ? "on" : ""}">${App.icon(App.isDesktop() ? "table" : "list", "sm")}${App.isDesktop() ? "Table" : "List"}</button>
               <button type="button" data-mode="board" class="${state.mode === "board" ? "on" : ""}">${App.icon("board", "sm")}Board</button>
             </div>
-            ${isToday ? `<button class="btn sm ghost" type="button" data-new-self title="New self-assigned task (Shift+N)">${App.icon("me", "sm")}Self-assigned</button>` : ""}
             <button class="btn sm primary" type="button" data-new>${App.icon("plus", "sm")}New</button>
           </div>
         </div>`;
