@@ -106,6 +106,31 @@
     Actions.save(t);
     App.toast(due ? `Due ${App.relDueLower(due)}` : "Due date cleared", { label: "Undo", onClick: () => Store.save("tasks", before) });
   };
+  Actions.setStartDate = (task, date) => {
+    const before = copy(task);
+    const t = copy(task);
+    t.startDate = date || "";
+    Actions.addLog(t, date ? `Not until ${App.fmtDate(date)}` : "“Not until” cleared", true);
+    Actions.save(t);
+    App.toast(date ? `Hidden from Today until ${App.fmtDateLong(date)}` : "Back on Today", { label: "Undo", onClick: () => Store.save("tasks", before) });
+  };
+  Actions.snoozeChoices = () => {
+    const firstNextMonth = App.toDateStr(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1));
+    return [
+      { label: "Tomorrow", value: App.addDays(1) },
+      { label: "In 2 days", value: App.addDays(2) },
+      { label: "Next Monday", value: App.nextWeekday(1) },
+      { label: "In 1 week", value: App.addDays(7) },
+      { label: "In 2 weeks", value: App.addDays(14) },
+      { label: "Next month", value: firstNextMonth }
+    ];
+  };
+  Actions.snoozeMenu = (anchor, task, opts) => {
+    const items = Actions.snoozeChoices().map(c => ({ label: c.label, k: App.fmtDate(c.value), icon: "moon", on: task.startDate === c.value, onClick: () => Actions.setStartDate(Store.tasks.get(task.id), c.value) }));
+    items.push({ sep: true }, { label: "Pick a date…", icon: "edit", onClick: () => global.Editor.open(task.id, { focus: "start" }) });
+    if (task.startDate) items.push({ label: "Clear “not until”", icon: "x", onClick: () => Actions.setStartDate(Store.tasks.get(task.id), "") });
+    App.menu.open(anchor, [{ header: "Not until (hide from Today)" }].concat(items), opts);
+  };
   Actions.setFollowUp = (task, date) => {
     const t = copy(task);
     t.waiting = Object.assign({ personId: "", since: App.today(), followUp: "" }, t.waiting, { followUp: date });
@@ -113,14 +138,65 @@
     App.toast(`Follow up ${App.relDueLower(date)}`);
   };
 
-  Actions.remove = async task => {
-    const ok = await App.confirm({ title: "Delete this task?", text: `"${task.title}" will be permanently deleted.`, okLabel: "Delete", danger: true });
-    if (!ok) return false;
-    const before = copy(task);
-    Store.remove("tasks", task.id);
-    App.toast("Task deleted", { label: "Undo", onClick: () => Store.save("tasks", before) });
-    global.Shots.cleanupLater((before.shots || []).map(s => s.id));
-    return true;
+  // ---------- Recently deleted: tasks move to the bin for 30 days ----------
+  Actions.TRASH_DAYS = 30;
+  /** Moves tasks to Recently deleted (no confirm needed: Undo, or restore from the bin). */
+  Actions.trash = tasks => {
+    tasks = tasks.filter(Boolean);
+    if (!tasks.length) return;
+    const now = new Date().toISOString();
+    Store.saveMany("trash", tasks.map(t => Object.assign(copy(t), { deletedAt: now })));
+    tasks.forEach(t => Store.remove("tasks", t.id));
+    App.toast(tasks.length === 1 ? "Moved to Recently deleted" : `${tasks.length} tasks moved to Recently deleted`, { label: "Undo", onClick: () => Actions.restore(tasks.map(t => Store.trash.get(t.id)), true) });
+  };
+  Actions.remove = async task => { Actions.trash([task]); return true; };
+  Actions.restore = (items, quiet) => {
+    items = items.filter(Boolean);
+    const back = items.map(i => { const t = copy(i); delete t.deletedAt; Actions.addLog(t, "Restored from Recently deleted", true); return t; });
+    Store.saveMany("tasks", back);
+    items.forEach(i => Store.remove("trash", i.id));
+    if (!quiet) App.toast(items.length === 1 ? "Task restored" : `${items.length} tasks restored`);
+  };
+  /** Deletes for good, including any screenshots no other task uses. */
+  Actions.purge = items => {
+    const shotIds = [];
+    items.filter(Boolean).forEach(i => { (i.shots || []).forEach(s => shotIds.push(s.id)); Store.remove("trash", i.id); });
+    global.Shots.cleanupLater(shotIds, 0);
+  };
+  /** Clears bin items older than 30 days (run once data is loaded). */
+  Actions.purgeExpired = () => {
+    const cutoff = new Date(Date.now() - Actions.TRASH_DAYS * 86400000).toISOString();
+    const old = [...Store.trash.values()].filter(i => (i.deletedAt || "") < cutoff);
+    if (old.length) Actions.purge(old);
+  };
+
+  Actions.openTrash = () => {
+    const body = App.el(`<div class="trash"></div>`);
+    const foot = App.el(`<div style="display:contents"><span class="spacer"></span><button type="button" class="btn danger" data-empty>${App.icon("trash", "sm")}Empty bin</button></div>`);
+    App.sheet.open({ title: "Recently deleted", subtitle: `Deleted tasks are kept for ${Actions.TRASH_DAYS} days`, body, foot });
+    const paint = () => {
+      const items = [...Store.trash.values()].sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
+      foot.querySelector("[data-empty]").disabled = !items.length;
+      body.innerHTML = items.length ? items.map(i => {
+        const left = Math.max(0, Actions.TRASH_DAYS - Math.floor((Date.now() - new Date(i.deletedAt).getTime()) / 86400000));
+        const meta = [Model.requesterName(i), Model.projectName(i.projectId), `deleted ${App.relative(i.deletedAt)}`, `${left} day${left === 1 ? "" : "s"} left`].filter(Boolean).map(esc).join(" · ");
+        return `<div class="r-item" data-trash-id="${esc(i.id)}"><div class="t"><div>${esc(i.title || "Untitled")}</div><div class="m">${meta}</div></div>
+          <div class="acts"><button type="button" class="btn xs" data-restore>${App.icon("undo", "xs")}Restore</button><button type="button" class="btn xs ghost" data-purge>Delete forever</button></div></div>`;
+      }).join("") : `<div class="empty"><div class="big">🗑️</div><h3>Nothing here</h3><p>Deleted tasks show up here for ${Actions.TRASH_DAYS} days.</p></div>`;
+    };
+    body.addEventListener("click", async e => {
+      const row = e.target.closest("[data-trash-id]"); if (!row) return;
+      const item = Store.trash.get(row.dataset.trashId); if (!item) return;
+      if (e.target.closest("[data-restore]")) { Actions.restore([item]); paint(); }
+      else if (e.target.closest("[data-purge]")) {
+        if (await App.confirm({ title: "Delete forever?", text: `"${item.title}" can't be recovered after this.`, okLabel: "Delete forever", danger: true })) { Actions.purge([item]); paint(); }
+      }
+    });
+    foot.querySelector("[data-empty]").onclick = async () => {
+      const n = Store.trash.size;
+      if (await App.confirm({ title: "Empty the bin?", text: `${App.plural(n, "task")} will be deleted forever.`, okLabel: "Empty bin", danger: true })) { Actions.purge([...Store.trash.values()]); paint(); }
+    };
+    paint();
   };
 
   Actions.duplicate = task => {
@@ -181,10 +257,11 @@
       active ? { label: "Mark done", icon: "check", k: "X", onClick: () => Actions.complete(Store.tasks.get(task.id)) } : { label: "Reopen", icon: "undo", onClick: () => Actions.reopen(Store.tasks.get(task.id)) },
       { label: "Change status…", icon: "board", k: "S", onClick: () => Actions.statusMenu(anchor, Store.tasks.get(task.id), opts) },
       { label: "Change due date…", icon: "calendar", k: "D", onClick: () => Actions.dueMenu(anchor, Store.tasks.get(task.id), opts) },
+      { label: "Not until…", icon: "moon", k: "Z", onClick: () => Actions.snoozeMenu(anchor, Store.tasks.get(task.id), opts) },
       { label: "Cycle priority", icon: "flag", k: "P", onClick: () => Actions.cyclePriority(Store.tasks.get(task.id)) },
       { label: "Duplicate", icon: "copy", onClick: () => { const t = Actions.duplicate(Store.tasks.get(task.id)); App.toast("Duplicated", { label: "Open", onClick: () => global.Editor.open(t.id) }); } },
       { sep: true },
-      { label: "Delete", icon: "trash", danger: true, k: "Del", onClick: () => Actions.remove(Store.tasks.get(task.id)) }
+      { label: "Delete", icon: "trash", danger: true, k: "Del", onClick: () => Actions.trash([Store.tasks.get(task.id)]) }
     ], opts);
   };
 
@@ -243,6 +320,10 @@
       : `Follow up${who ? ` with ${who}` : ""}${when}`;
     return `<span class="pill ${due ? "red" : "orange"}" ${t.waiting.note ? `title="${esc(t.waiting.note)}"` : ""}>${App.icon("hourglass")}${esc(label)}</span>`;
   };
+  Comp.snoozePill = (t, clickable) => {
+    if (!Model.isSnoozed(t)) return "";
+    return `<span class="pill purple ${clickable ? "btnish" : ""}" ${clickable ? `data-act="snooze" title="Change “not until” (Z)"` : ""}>${App.icon("moon")}Not until ${esc(App.relDue(t.startDate))}</span>`;
+  };
   Comp.extrasPills = t => {
     let h = "";
     const sp = Model.stepProgress(t);
@@ -269,7 +350,7 @@
     opts = opts || {};
     const active = Model.isActive(t);
     const prio = Model.effPriority(t);
-    return `<div class="tcard ${active ? "" : "done"}" data-task-id="${esc(t.id)}" tabindex="-1" ${opts.draggable ? `draggable="true"` : ""}>
+    return `<div class="tcard ${active ? "" : "done"} ${Model.isSnoozed(t) ? "snoozed" : ""}" data-task-id="${esc(t.id)}" tabindex="-1" ${opts.draggable ? `draggable="true"` : ""}>
       ${active ? `<span class="prio-bar prio-${prio.key}"></span>` : ""}
       <button type="button" class="check ${active ? "" : "on"}" data-act="toggle" aria-label="${active ? "Mark done" : "Reopen"}" title="${active ? "Mark done (X)" : "Reopen"}">${App.icon("check")}</button>
       <div class="body">
@@ -281,6 +362,7 @@
           ${active ? Comp.statusPill(t, true) : `<span class="pill green">${App.icon("check")}${esc(t.status === "cancelled" ? "Cancelled" : "Done " + (t.completedAt ? App.fmtIso(t.completedAt) : ""))}</span>`}
           ${active ? Comp.prioPill(t, false) : ""}
           ${opts.hideProject ? "" : Comp.projectPill(t.projectId)}
+          ${active ? Comp.snoozePill(t, true) : ""}
           ${active ? Comp.followPill(t) : ""}
           ${opts.compact ? "" : Comp.extrasPills(t)}
           ${opts.compact ? "" : Comp.tags(t)}
@@ -306,6 +388,7 @@
       if (act === "status") { Actions.statusMenu(actEl, t); return; }
       if (act === "priority") { Actions.priorityMenu(actEl, t); return; }
       if (act === "due") { Actions.dueMenu(actEl, t); return; }
+      if (act === "snooze") { Actions.snoozeMenu(actEl, t); return; }
       if (act === "more") { Actions.moreMenu(actEl, t); return; }
       if (act === "shot") { if (t.shots && t.shots[0]) global.Shots.view(t.shots[0].id); return; }
       if (e.target.closest("a")) return;

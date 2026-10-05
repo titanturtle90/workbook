@@ -35,6 +35,11 @@
   Editor.bindPersonInput = (input, allowMe, onPick) => App.autocomplete(input, { source: peopleSource(allowMe), onPick: it => { input.value = it.value; if (onPick) onPick(it.value); } });
   Editor.bindProjectInput = (input, onPick) => App.autocomplete(input, { source: projectSource(), onPick: it => { input.value = it.value; if (onPick) onPick(it.value); } });
   const sourceOptions = sel => `<option value="">—</option>` + Model.SOURCES.map(s => `<option value="${s.key}" ${sel === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("");
+  const snoozeChips = attr => global.Actions.snoozeChoices().map(c => `<button type="button" class="chip" ${attr}="${c.value}">${esc(c.label)}</button>`).join("");
+  const startField = value => `<div class="field span-2"><label>Not until <span class="muted">(optional · hides it from Today until then)</span></label>
+          <div class="row"><input class="input" type="date" name="startDate" value="${esc(value || "")}" style="max-width:200px"><button type="button" class="btn sm ghost" data-clear-start>Clear</button></div>
+          <div class="quick-dates">${snoozeChips("data-start")}</div>
+        </div>`;
   const quickDateChips = (attr) => Comp.quickDates().filter(d => d.value).map(d => `<button type="button" class="chip" ${attr}="${d.value}">${esc(d.label)}</button>`).join("");
 
   // ---------- follow-up fields (quick add) ----------
@@ -84,6 +89,7 @@
           <div class="row"><input class="input" type="date" name="due" value="${esc(defaults.due || "")}" style="max-width:200px"></div>
           <div class="quick-dates">${quickDateChips("data-date")}</div>
         </div>
+        ${startField(defaults.startDate)}
         <div class="field"><label>Status</label><select class="select" name="status">${Model.ACTIVE_STATUSES.map(st => `<option value="${st.key}" ${(defaults.status || "new") === st.key ? "selected" : ""}>${esc(st.label)}</option>`).join("")}</select></div>
         <div class="field"><label>Priority</label>
           <div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${p.key === "medium" ? "on" : ""}">${p.label}</button>`).join("")}</div>
@@ -131,6 +137,13 @@
     global.Shots.onPaste(body, addFiles);
     if (defaults.files && defaults.files.length) addFiles(defaults.files);
 
+    // not until
+    const startIn = f.querySelector("[name=startDate]");
+    const markStart = () => f.querySelectorAll("[data-start]").forEach(b => b.classList.toggle("on", b.dataset.start === startIn.value));
+    f.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", () => { startIn.value = startIn.value === b.dataset.start ? "" : b.dataset.start; markStart(); }));
+    f.querySelector("[data-clear-start]").addEventListener("click", () => { startIn.value = ""; markStart(); });
+    startIn.addEventListener("change", markStart); markStart();
+
     // status + follow-up
     const statusSel = f.querySelector("[name=status]");
     const fuCheck = f.querySelector("[name=fu]");
@@ -160,6 +173,7 @@
         priority: prio,
         source: source.value || (/^me$/i.test(req.value.trim()) ? "self" : ""),
         status: statusSel.value || "new",
+        startDate: startIn.value || "",
         steps: step.value.trim() ? [{ id: App.genId(), text: step.value.trim(), done: false }] : [],
         log: [Actions.logEntry("Created", true)]
       });
@@ -271,6 +285,7 @@
           <div class="row"><input class="input" type="date" name="due" value="${esc(t.due || "")}" style="max-width:200px"><button type="button" class="btn sm ghost" data-clear-due>Clear</button></div>
           <div class="quick-dates">${quickDateChips("data-date")}</div>
         </div>
+        ${startField(t.startDate)}
       </div>
 
       <div class="ed-section" data-waiting-wrap></div>
@@ -363,6 +378,11 @@
     const setDue = v => { due.value = v; mutate(t => { if (t.due && v && t.due !== v) Actions.addLog(t, `Due date moved: ${App.fmtDate(t.due)} → ${App.fmtDate(v)}`, true); t.due = v; }); };
     due.addEventListener("change", () => setDue(due.value));
     q("[data-clear-due]").addEventListener("click", () => setDue(""));
+    const startIn = q("[name=startDate]");
+    const setStart = v => { startIn.value = v; mutate(t => { if ((t.startDate || "") === v) return; t.startDate = v; Actions.addLog(t, v ? `Not until ${App.fmtDate(v)}` : "“Not until” cleared", true); }); };
+    startIn.addEventListener("change", () => setStart(startIn.value));
+    q("[data-clear-start]").addEventListener("click", () => setStart(""));
+    body.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", () => setStart(b.dataset.start)));
     body.querySelectorAll("[data-date]").forEach(b => b.addEventListener("click", () => setDue(b.dataset.date)));
 
     textField(q("[name=details]"), (t, v) => { t.details = v; });
@@ -527,6 +547,8 @@
       if (document.activeElement !== q("[name=status]")) q("[name=status]").value = t.status;
       body.querySelectorAll("[data-date]").forEach(b => b.classList.toggle("on", b.dataset.date === t.due));
       if (document.activeElement !== due) due.value = t.due || "";
+      body.querySelectorAll("[data-start]").forEach(b => b.classList.toggle("on", b.dataset.start === t.startDate));
+      if (document.activeElement !== startIn) startIn.value = t.startDate || "";
       paintWaiting(t);
       paintShots(t);
 
@@ -567,7 +589,8 @@
 
     // initial focus
     setTimeout(() => {
-      if (opts.focus === "due") { due.focus(); try { due.showPicker && due.showPicker(); } catch (e) { /* ignore */ } }
+      if (opts.focus === "start") { startIn.focus(); try { startIn.showPicker && startIn.showPicker(); } catch (e) { /* ignore */ } }
+      else if (opts.focus === "due") { due.focus(); try { due.showPicker && due.showPicker(); } catch (e) { /* ignore */ } }
       else if (opts.focus === "waiting") { body.querySelector("[name=waitPerson]")?.focus(); body.querySelector("[data-waiting-wrap]").scrollIntoView({ block: "center" }); }
       else if (opts.focus === "step") q("[name=newstep]").focus();
       else if (opts.focus === "log") q("[name=newlog]").focus();

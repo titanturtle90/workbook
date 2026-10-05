@@ -8,7 +8,7 @@ No build step: plain HTML/CSS/JS served statically (GitHub Pages), with Firebase
 
 | Area | What it does |
 | --- | --- |
-| **Dashboard** | Switch between three views (top right, or press `T`): **Today** (overdue, due today, follow-ups due, the rest of this week, waiting on others, new asks to triage, then everything else), **Table** (sortable columns, group by requester / project / status / priority / due) and **Board** (drag cards between statuses). Table and Board share search plus filters for who asked, project, status, priority, due, tags, and self-assigned. On a phone the table becomes cards. |
+| **Dashboard** | Switch between four views (top right, or press `T`): **Today** (overdue, due today, follow-ups due, the rest of this week, waiting on others, new asks to triage, then everything else), **Table** (sortable columns, group by requester / project / status / priority / due) **Board** (drag cards between statuses) and **Calendar** (month grid of due dates and follow-ups; click a day for its list, drag to reschedule). Table and Board share search plus filters for who asked, project, status, priority, due, tags, and self-assigned. On a phone the table becomes cards. |
 | **People** | Everyone who asks you for things: open asks, overdue, what you're waiting on them for, and their history. "Me" holds your self-assigned tasks. |
 | **Projects** | Name, color, short description and an optional photo; progress bar, open/done counts, next due date, and a page per project. |
 | **Done** | Searchable archive of finished work, filterable by month. |
@@ -32,7 +32,7 @@ Press `?` in the app for the full list.
 | `M` | Meeting mode | `X` | Mark done / reopen |
 | `/` | Search | `S` | Change status (then `1`–`8`) |
 | `1`–`5` | Dashboard, People, Projects, Done, Review | `P` | Cycle priority |
-| `T` | Switch Today → Table → Board | `D` | Change due date |
+| `T` | Switch Today → Table → Board → Calendar | `D` | Change due date |
 | `[` | Collapse / expand the side menu |
 | `Esc` | Close | `F` | Finish the next step |
 | | | `L` | Log a note |

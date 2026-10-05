@@ -4,15 +4,17 @@
   const App = global.App, Model = global.Model, Store = global.Store, Comp = global.Comp;
   const Views = global.Views = global.Views || {};
 
-  const collapsed = () => App.lsGet("wb:todayCollapsed", { later: true });
+  const collapsed = () => Object.assign({ snoozed: true }, App.lsGet("wb:todayCollapsed", { later: true }));
 
   /** Buckets every active task into exactly one Today section. */
   Views.todayBuckets = () => {
-    const b = { overdue: [], today: [], followup: [], week: [], waiting: [], triage: [], later: [] };
+    const b = { overdue: [], today: [], followup: [], week: [], waiting: [], triage: [], later: [], snoozed: [] };
     const today = App.today();
     const endOfWeek = App.addDays(6, App.weekStart());
     [...Store.tasks.values()].filter(Model.isActive).forEach(t => {
-      if (t.due && t.due < today) b.overdue.push(t);
+      // "Not until" hides a task from Today, unless it's already due.
+      if (Model.isSnoozed(t) && !(t.due && t.due <= today)) b.snoozed.push(t);
+      else if (t.due && t.due < today) b.overdue.push(t);
       else if (t.due === today) b.today.push(t);
       else if (Model.followUpDue(t)) b.followup.push(t);
       else if (t.due && t.due <= endOfWeek) b.week.push(t);
@@ -23,6 +25,7 @@
     const smart = Model.comparator("smart");
     Object.values(b).forEach(list => list.sort(smart));
     b.week.sort(Model.comparator("due"));
+    b.snoozed.sort((x, y) => x.startDate.localeCompare(y.startDate));
     b.followup.sort((x, y) => (x.waiting.followUp || "").localeCompare(y.waiting.followUp || ""));
     b.waiting.sort((x, y) => (x.waiting?.followUp || "9999").localeCompare(y.waiting?.followUp || "9999"));
     return b;
@@ -65,6 +68,7 @@
         ${sec("waiting", "Waiting & follow-ups", "", b.waiting)}
         ${sec("triage", "New asks to triage", "", b.triage)}
         ${sec("later", "Later & no date", "", b.later)}
+        ${sec("snoozed", "Snoozed (not until later)", "", b.snoozed)}
       `;
       root.querySelectorAll("[data-jump]").forEach(btn => btn.onclick = () => {
         const id = btn.dataset.jump;

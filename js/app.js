@@ -99,6 +99,7 @@
       <button type="button" class="mrow" data-go="review">${App.icon("review")}<div class="grow"><div>Weekly review ${c.reviewDue ? `<span class="pill orange" style="margin-left:6px">Due</span>` : ""}</div><div class="sub">Wins, slips, follow-ups, next week</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="meeting">${App.icon("meeting")}<div class="grow"><div>Meeting mode</div><div class="sub">Capture several asks quickly</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="self">${App.icon("me")}<div class="grow"><div>New self-assigned task</div><div class="sub">Something you're asking of yourself</div></div>${App.icon("right", "sm")}</button>
+      <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow"><div>Recently deleted</div><div class="sub">${Store.trash.size ? App.plural(Store.trash.size, "task") + " · kept 30 days" : "Empty"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="export">${App.icon("download")}<div class="grow"><div>Export &amp; reports</div><div class="sub">Excel, monthly summary, backup</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="settings">${App.icon("settings")}<div class="grow"><div>Settings</div><div class="sub">Theme, capacity, account</div></div>${App.icon("right", "sm")}</button>
     </div>`);
@@ -117,6 +118,7 @@
     else if (a === "shortcuts") global.Shortcuts.help();
     else if (a === "settings") Settings.open();
     else if (a === "search") Router.go("tasks", { focusSearch: true });
+    else if (a === "trash") global.Actions.openTrash();
   }
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-action]"); if (!b) return;
@@ -165,7 +167,7 @@
 
   // Re-render on data changes (skip while the user is mid-drag on the board).
   App.on("data", () => { if (document.querySelector(".tcard.dragging")) return; renderCurrent(); renderNav(); });
-  App.on("data-ready", () => { Router.render(); offerPreviewImport(); });
+  App.on("data-ready", () => { Router.render(); offerPreviewImport(); global.Actions.purgeExpired(); });
   // Refresh relative dates when the day rolls over or the app comes back to the foreground.
   let lastDay = App.today();
   document.addEventListener("visibilitychange", () => { if (!document.hidden && App.today() !== lastDay) { lastDay = App.today(); renderCurrent(); renderNav(); } });
@@ -190,7 +192,7 @@
         <div class="seg">${[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]].map(([v, l]) => `<button type="button" data-theme="${v}" class="${theme === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
       <div class="field mt-16"><label>Dashboard opens on</label>
-        <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["board", "Board"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:dashStart", "last") === v ? "on" : ""}">${l}</button>`).join("")}</div>
+        <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["board", "Board"], ["calendar", "Calendar"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:dashStart", "last") === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
       <div class="field mt-16"><label>Weekly capacity (hours of task work)</label>
         <input class="input" type="number" min="1" max="80" step="1" data-capacity value="${esc(Store.setting("weeklyCapacity", 30))}" style="max-width:140px">
@@ -199,6 +201,7 @@
       <div class="mt-16">
         <button type="button" class="mrow" data-a="shortcuts">${App.icon("keyboard")}<div class="grow">Keyboard shortcuts</div>${App.icon("right", "sm")}</button>
         <button type="button" class="mrow" data-a="export">${App.icon("download")}<div class="grow">Export &amp; reports</div>${App.icon("right", "sm")}</button>
+        <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow">Recently deleted${Store.trash.size ? ` <span class="muted">(${Store.trash.size})</span>` : ""}</div>${App.icon("right", "sm")}</button>
       </div>
       <p class="muted mt-16" style="font-size:.75rem">Workbook v1</p>
     </div>`);
@@ -228,6 +231,8 @@
     await Store.saveMany("people", data.people);
     await Store.saveMany("projects", data.projects);
     await Store.saveMany("tasks", data.tasks);
+    await Store.saveMany("templates", data.templates || []);
+    await Store.saveMany("trash", data.trash || []);
     Store.clearLocalPreview();
     App.sheet.close();
     App.toast(`Imported ${App.plural(data.tasks.length, "task")} from preview`);

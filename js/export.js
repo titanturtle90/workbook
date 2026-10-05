@@ -79,7 +79,8 @@
     let images = [];
     try { images = await Store.allImages(); } catch (e) { App.toast("Screenshots couldn't be included (offline?)"); }
     const data = { app: "workbook", version: 2, exportedAt: new Date().toISOString(),
-      tasks: [...Store.tasks.values()], people: [...Store.people.values()], projects: [...Store.projects.values()], images };
+      tasks: [...Store.tasks.values()], people: [...Store.people.values()], projects: [...Store.projects.values()],
+      templates: [...Store.templates.values()], trash: [...Store.trash.values()], images };
     App.download(`workbook-backup-${App.today()}.json`, JSON.stringify(data, null, 2), "application/json");
   };
 
@@ -96,6 +97,8 @@
       if (!ok) return;
       for (const img of data.images || []) { try { await Store.putImage(img); } catch (e) { console.error(e); } }
       await Store.saveMany("people", data.people || []);
+      await Store.saveMany("templates", data.templates || []);
+      await Store.saveMany("trash", data.trash || []);
       await Store.saveMany("projects", data.projects || []);
       await Store.saveMany("tasks", data.tasks || []);
       App.toast("Backup restored");

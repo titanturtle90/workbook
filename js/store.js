@@ -7,7 +7,7 @@
 (function (global) {
   "use strict";
   const App = global.App;
-  const COLS = ["tasks", "people", "projects", "meta"];
+  const COLS = ["tasks", "people", "projects", "meta", "trash", "templates"];
   const LOCAL_PREFIX = "wb:local:";
 
   const Store = {
@@ -15,6 +15,8 @@
     people: new Map(),
     projects: new Map(),
     meta: new Map(),
+    trash: new Map(),      // deleted tasks, kept 30 days (Recently deleted)
+    templates: new Map(),  // reusable task templates
     mode: null,
     uid: null,
     loaded: new Set()

@@ -31,7 +31,10 @@
       panel.innerHTML = `
         <div class="page-head">
           <div><h1>Done</h1><p class="lede">${thisWeek} finished this week · ${thisMonth} this month</p></div>
-          <div class="head-actions"><button class="btn sm ghost" type="button" data-summary>${App.icon("review", "sm")}Monthly summary</button></div>
+          <div class="head-actions">
+            <button class="btn sm ghost" type="button" data-trash>${App.icon("trash", "sm")}Recently deleted${Store.trash.size ? ` (${Store.trash.size})` : ""}</button>
+            <button class="btn sm ghost" type="button" data-summary>${App.icon("review", "sm")}Monthly summary</button>
+          </div>
         </div>
         <div class="toolbar">
           <div class="search"><span>${App.icon("search", "sm")}</span><input type="search" id="doneSearch" placeholder="Search finished tasks" value="${esc(query)}" autocomplete="off"></div>
@@ -47,6 +50,7 @@
       if (hadFocus) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
       panel.querySelector("[data-month]").onchange = e => { month = e.target.value; Views.done.render(panel); };
       panel.querySelector("[data-cancelled]").onclick = () => { showCancelled = !showCancelled; Views.done.render(panel); };
+      panel.querySelector("[data-trash]").onclick = () => global.Actions.openTrash();
       panel.querySelector("[data-summary]").onclick = () => global.Exporter.monthlySummary(month || App.today().slice(0, 7));
     }
   };

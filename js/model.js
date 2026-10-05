@@ -62,6 +62,7 @@
       status: "new",
       priority: "medium",
       due: "",
+      startDate: "", // "Not until": hidden from Today before this date
       steps: [],
       log: [],
       waiting: { personId: "", since: "", followUp: "", note: "" },
@@ -78,6 +79,7 @@
   };
 
   Model.isActive = t => t.status !== "done" && t.status !== "cancelled";
+  Model.isSnoozed = t => Model.isActive(t) && !!t.startDate && t.startDate > App.today();
   Model.isSelf = t => t.requesterId === ME;
   Model.nextStep = t => (t.steps || []).find(s => !s.done) || null;
   Model.stepProgress = t => { const s = t.steps || []; return { done: s.filter(x => x.done).length, total: s.length }; };
@@ -164,6 +166,7 @@
     if (f.priorities && f.priorities.length && !f.priorities.includes(Model.effPriority(t).key)) return false;
     if (f.tags && f.tags.length && !f.tags.every(tag => (t.tags || []).includes(tag))) return false;
     if (f.self === true && !Model.isSelf(t)) return false;
+    if (f.hideSnoozed && Model.isSnoozed(t)) return false;
     if (f.self === false && Model.isSelf(t)) return false;
     if (f.due) {
       const b = Model.dueBucket(t);
