@@ -64,7 +64,7 @@
       due: "",
       steps: [],
       log: [],
-      waiting: { personId: "", since: "", followUp: "" },
+      waiting: { personId: "", since: "", followUp: "", note: "" },
       links: [],
       shots: [],
       estimate: null,
@@ -120,7 +120,8 @@
   };
 
   // ---------- waiting / follow-ups ----------
-  Model.isWaiting = t => Model.isActive(t) && (t.status === "waiting" || !!(t.waiting && t.waiting.personId && t.waiting.followUp));
+  Model.hasFollowUp = t => !!(t.waiting && t.waiting.followUp && (t.waiting.on || t.waiting.personId || t.waiting.note));
+  Model.isWaiting = t => Model.isActive(t) && (t.status === "waiting" || Model.hasFollowUp(t));
   Model.followUpDue = t => Model.isWaiting(t) && t.waiting && t.waiting.followUp && t.waiting.followUp <= App.today();
 
   // ---------- recurrence ----------
@@ -171,7 +172,7 @@
     if (f.q) {
       const hay = [t.title, t.details, Model.requesterName(t), Model.projectName(t.projectId), (t.tags || []).join(" "),
         (t.steps || []).map(s => s.text).join(" "), (t.log || []).map(l => l.text).join(" "),
-        Model.personName(t.waiting?.personId)].join(" ").toLowerCase();
+        Model.personName(t.waiting?.personId), t.waiting?.note || ""].join(" ").toLowerCase();
       if (!f.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w))) return false;
     }
     return true;
@@ -182,7 +183,7 @@
     { key: "smart", label: "Smart (priority + due)" },
     { key: "due", label: "Due date" },
     { key: "requester", label: "Who asked" },
-    { key: "title", label: "The ask (A–Z)" },
+    { key: "title", label: "Task (A–Z)" },
     { key: "next", label: "Next step (A–Z)" },
     { key: "project", label: "Project" },
     { key: "status", label: "Status" },

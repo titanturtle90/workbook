@@ -37,6 +37,34 @@
   const sourceOptions = sel => `<option value="">—</option>` + Model.SOURCES.map(s => `<option value="${s.key}" ${sel === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("");
   const quickDateChips = (attr) => Comp.quickDates().filter(d => d.value).map(d => `<button type="button" class="chip" ${attr}="${d.value}">${esc(d.label)}</button>`).join("");
 
+  // ---------- follow-up fields (quick add) ----------
+  const FU_CHOICES = [["1", "Tomorrow"], ["2", "2 days"], ["3", "3 days"], ["7", "1 week"], ["14", "2 weeks"]];
+  function followUpFields() {
+    return `<div class="form-grid">
+      <div class="field span-2"><label>What to follow up on</label><input class="input" name="fuNote" placeholder="e.g. Confirm finance got the numbers" autocomplete="off"></div>
+      <div class="field span-2"><label>Who to follow up with <span class="muted">(optional)</span></label><div class="ac"><input class="input" name="fuWho" placeholder="Name" autocomplete="off"></div></div>
+      <div class="field span-2"><label>Follow up in</label>
+        <div class="row wrap">${FU_CHOICES.map(([d, l]) => `<button type="button" class="chip" data-fu-days="${d}">${l}</button>`).join("")}
+          <input class="input" type="date" name="fuDate" style="max-width:180px"></div>
+      </div>
+    </div>`;
+  }
+  function bindFollowUpFields(box) {
+    const note = box.querySelector("[name=fuNote]"), who = box.querySelector("[name=fuWho]"), date = box.querySelector("[name=fuDate]");
+    Editor.bindPersonInput(who, false);
+    const mark = () => box.querySelectorAll("[data-fu-days]").forEach(b => b.classList.toggle("on", App.addDays(Number(b.dataset.fuDays)) === date.value));
+    box.querySelectorAll("[data-fu-days]").forEach(b => b.addEventListener("click", () => { date.value = App.addDays(Number(b.dataset.fuDays)); mark(); }));
+    date.addEventListener("change", mark);
+    date.value = App.addDays(Model.FOLLOW_UP_DAYS); mark();
+    return {
+      note,
+      read() {
+        const pid = Actions.ensurePerson(who.value);
+        return { note: note.value.trim(), personId: pid === Model.ME ? "" : pid, followUp: date.value || App.addDays(Model.FOLLOW_UP_DAYS) };
+      }
+    };
+  }
+
   // ================= QUICK ADD =================
   /** defaults: { requesterId, projectId, self, due, status } */
   Editor.quickAdd = function (defaults) {
@@ -56,6 +84,7 @@
           <div class="row"><input class="input" type="date" name="due" value="${esc(defaults.due || "")}" style="max-width:200px"></div>
           <div class="quick-dates">${quickDateChips("data-date")}</div>
         </div>
+        <div class="field"><label>Status</label><select class="select" name="status">${Model.ACTIVE_STATUSES.map(st => `<option value="${st.key}" ${(defaults.status || "new") === st.key ? "selected" : ""}>${esc(st.label)}</option>`).join("")}</select></div>
         <div class="field"><label>Priority</label>
           <div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${p.key === "medium" ? "on" : ""}">${p.label}</button>`).join("")}</div>
         </div>
@@ -63,6 +92,10 @@
         <div class="field span-2"><label>Next step <span class="muted">(optional)</span></label><input class="input" name="step" placeholder="e.g. Pull last quarter's numbers"></div>
         <div class="field span-2"><label>Screenshot of the request <span class="muted">(optional)</span></label>
           <div class="shots" data-shot-strip></div><div data-shot-drop></div>
+        </div>
+        <div class="field span-2">
+          <label class="check-row"><input type="checkbox" name="fu"><span><b>Follow up</b> <span class="muted">Remind me to check back on this</span></span></label>
+          <div class="fu-box" data-fu-box hidden>${followUpFields()}</div>
         </div>
       </div>
       <button type="submit" hidden></button>
@@ -98,6 +131,18 @@
     global.Shots.onPaste(body, addFiles);
     if (defaults.files && defaults.files.length) addFiles(defaults.files);
 
+    // status + follow-up
+    const statusSel = f.querySelector("[name=status]");
+    const fuCheck = f.querySelector("[name=fu]");
+    const fuBox = f.querySelector("[data-fu-box]");
+    const fu = bindFollowUpFields(fuBox);
+    const showFu = on => { fuCheck.checked = on; fuBox.hidden = !on; if (on) setTimeout(() => fu.note.focus(), 30); };
+    fuCheck.addEventListener("change", () => showFu(fuCheck.checked));
+    // "Waiting On Someone" implies a follow-up; pre-fill who from the requester.
+    statusSel.addEventListener("change", () => {
+      if (statusSel.value === "waiting" && !fuCheck.checked) showFu(true);
+    });
+
     let saving = false;
     const submit = async (openAfter) => {
       if (saving) return;
@@ -114,10 +159,17 @@
         due: due.value || "",
         priority: prio,
         source: source.value || (/^me$/i.test(req.value.trim()) ? "self" : ""),
-        status: defaults.status || "new",
+        status: statusSel.value || "new",
         steps: step.value.trim() ? [{ id: App.genId(), text: step.value.trim(), done: false }] : [],
         log: [Actions.logEntry("Created", true)]
       });
+      if (fuCheck.checked) {
+        const w = fu.read();
+        t.waiting = { on: true, personId: w.personId, since: App.today(), followUp: w.followUp, note: w.note };
+        Actions.addLog(t, `Follow-up set for ${App.fmtDate(w.followUp)}${w.note ? `: ${w.note}` : ""}`, true);
+      } else if (t.status === "waiting") {
+        t.waiting = { personId: "", since: App.today(), followUp: App.addDays(Model.FOLLOW_UP_DAYS), note: "" };
+      }
       Store.save("tasks", t);
       App.sheet.close();
       if (openAfter) setTimeout(() => Editor.open(t.id), 60);
@@ -408,46 +460,61 @@
     // ---------- dynamic parts ----------
     function paintWaiting(t) {
       const wrap = q("[data-waiting-wrap]");
-      const show = t.status === "waiting" || (t.waiting && t.waiting.personId);
+      const isWaitStatus = t.status === "waiting";
+      const show = isWaitStatus || Model.hasFollowUp(t);
       if (!show) {
-        wrap.innerHTML = Model.isActive(t) ? `<button type="button" class="btn sm ghost" data-start-wait>${App.icon("hourglass", "sm")}I'm waiting on someone for this</button>` : "";
-        wrap.querySelector("[data-start-wait]")?.addEventListener("click", () => { mutate(t => { t.waiting = { personId: "", since: App.today(), followUp: App.addDays(Model.FOLLOW_UP_DAYS) }; if (t.status !== "waiting") { Actions.addLog(t, `Status: ${Model.status(t.status).label} → Waiting On Someone`, true); t.status = "waiting"; } }); q("[name=status]").value = "waiting"; setTimeout(() => wrap.querySelector("[name=waitPerson]")?.focus(), 30); });
+        wrap.innerHTML = Model.isActive(t) ? `<button type="button" class="btn sm ghost" data-start-fu>${App.icon("hourglass", "sm")}Add a follow-up</button>` : "";
+        wrap.querySelector("[data-start-fu]")?.addEventListener("click", () => {
+          mutate(t => { t.waiting = { on: true, personId: "", since: App.today(), followUp: App.addDays(Model.FOLLOW_UP_DAYS), note: "" }; Actions.addLog(t, `Follow-up set for ${App.fmtDate(t.waiting.followUp)}`, true); });
+          setTimeout(() => wrap.querySelector("[name=waitNote]")?.focus(), 30);
+        });
         return;
       }
-      const w = Object.assign({ personId: "", since: "", followUp: "" }, t.waiting);
+      const w = Object.assign({ personId: "", since: "", followUp: "", note: "" }, t.waiting);
       if (wrap.querySelector(".waiting-box") && wrap.contains(document.activeElement) && document.activeElement.matches("input")) return; // don't clobber typing
       wrap.innerHTML = `<div class="waiting-box">
-        <div class="label row">${App.icon("hourglass", "sm")}Waiting on someone</div>
+        <div class="label row">${App.icon("hourglass", "sm")}${isWaitStatus ? "Waiting on someone" : "Follow-up"}</div>
         <div class="form-grid mt-8">
-          <div class="field"><label>Waiting on</label><div class="ac"><input class="input" name="waitPerson" placeholder="Who?" value="${esc(Model.personName(w.personId))}"></div></div>
+          <div class="field span-2"><label>What to follow up on</label><input class="input" name="waitNote" placeholder="e.g. Confirm finance got the numbers" value="${esc(w.note || "")}" autocomplete="off"></div>
+          <div class="field"><label>${isWaitStatus ? "Waiting on" : "Follow up with"}</label><div class="ac"><input class="input" name="waitPerson" placeholder="Who? (optional)" value="${esc(Model.personName(w.personId))}"></div></div>
           <div class="field"><label>Since</label><input class="input" type="date" name="waitSince" value="${esc(w.since)}"></div>
           <div class="field span-2"><label>Follow up on</label>
             <div class="row wrap"><input class="input" type="date" name="waitFollow" value="${esc(w.followUp)}" style="max-width:200px">
-            <button type="button" class="chip" data-fu="1">Tomorrow</button><button type="button" class="chip" data-fu="2">In 2 days</button><button type="button" class="chip" data-fu="mon">Next Mon</button></div>
+            <button type="button" class="chip" data-fu="1">Tomorrow</button><button type="button" class="chip" data-fu="2">In 2 days</button><button type="button" class="chip" data-fu="7">In 1 week</button><button type="button" class="chip" data-fu="mon">Next Mon</button></div>
           </div>
         </div>
         <div class="row wrap mt-12">
           <button type="button" class="btn sm" data-nudged>${App.icon("check", "sm")}I followed up</button>
-          <button type="button" class="btn sm ghost" data-got-it>Got what I needed</button>
+          <button type="button" class="btn sm ghost" data-got-it>${isWaitStatus ? "Got what I needed" : "Follow-up done"}</button>
         </div>
       </div>`;
+      const setW = patch => mutate(t => { t.waiting = Object.assign({ on: true }, t.waiting, patch); }, true);
+      const wn = wrap.querySelector("[name=waitNote]");
+      wn.addEventListener("change", () => setW({ note: wn.value.trim() }));
       const wp = wrap.querySelector("[name=waitPerson]");
-      const saveWp = () => mutate(t => { t.waiting = Object.assign({}, t.waiting, { personId: Actions.ensurePerson(wp.value) === Model.ME ? "" : Actions.ensurePerson(wp.value) }); }, true);
+      const saveWp = () => { const pid = Actions.ensurePerson(wp.value); setW({ personId: pid === Model.ME ? "" : pid }); };
       Editor.bindPersonInput(wp, false, saveWp);
       wp.addEventListener("change", saveWp);
-      wrap.querySelector("[name=waitSince]").addEventListener("change", e => mutate(t => { t.waiting = Object.assign({}, t.waiting, { since: e.target.value }); }, true));
-      wrap.querySelector("[name=waitFollow]").addEventListener("change", e => mutate(t => { t.waiting = Object.assign({}, t.waiting, { followUp: e.target.value }); }, true));
+      wrap.querySelector("[name=waitSince]").addEventListener("change", e => setW({ since: e.target.value }));
+      wrap.querySelector("[name=waitFollow]").addEventListener("change", e => setW({ followUp: e.target.value }));
+      const markFu = () => wrap.querySelectorAll("[data-fu]").forEach(b => b.classList.toggle("on", (b.dataset.fu === "mon" ? App.nextWeekday(1) : App.addDays(Number(b.dataset.fu))) === wrap.querySelector("[name=waitFollow]").value));
+      markFu();
       wrap.querySelectorAll("[data-fu]").forEach(b => b.addEventListener("click", () => {
         const v = b.dataset.fu === "mon" ? App.nextWeekday(1) : App.addDays(Number(b.dataset.fu));
-        wrap.querySelector("[name=waitFollow]").value = v;
-        mutate(t => { t.waiting = Object.assign({}, t.waiting, { followUp: v }); }, true);
+        wrap.querySelector("[name=waitFollow]").value = v; markFu();
+        setW({ followUp: v });
       }));
       wrap.querySelector("[data-nudged]").addEventListener("click", () => {
         mutate(t => { const who = Model.personName(t.waiting?.personId); Actions.addLog(t, who ? `Followed up with ${who}` : "Followed up", false); t.waiting = Object.assign({}, t.waiting, { followUp: App.addDays(Model.FOLLOW_UP_DAYS) }); });
         App.toast(`Logged · next follow-up in ${Model.FOLLOW_UP_DAYS} days`);
       });
       wrap.querySelector("[data-got-it]").addEventListener("click", () => {
-        mutate(t => { const who = Model.personName(t.waiting?.personId); Actions.addLog(t, who ? `Got it from ${who}` : "No longer waiting", false); t.waiting = { personId: "", since: "", followUp: "" }; if (t.status === "waiting") t.status = "in_progress"; });
+        mutate(t => {
+          const who = Model.personName(t.waiting?.personId);
+          Actions.addLog(t, isWaitStatus ? (who ? `Got it from ${who}` : "No longer waiting") : "Follow-up done", false);
+          t.waiting = { personId: "", since: "", followUp: "", note: "" };
+          if (t.status === "waiting") t.status = "in_progress";
+        });
         q("[name=status]").value = Store.tasks.get(id).status;
       });
     }

@@ -56,7 +56,7 @@
 
   // ---------- table ----------
   const COLS = [
-    { key: "title", label: "The ask", cls: "c-title" },
+    { key: "title", label: "Task", cls: "c-title" },
     { key: "requester", label: "Who asked", cls: "c-who" },
     { key: "next", label: "Next step", cls: "c-next" },
     { key: "due", label: "Due", cls: "c-due" },

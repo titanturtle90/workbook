@@ -104,13 +104,13 @@
     t.due = due || "";
     if (before.due && due && before.due !== due) Actions.addLog(t, `Due date moved: ${App.fmtDate(before.due)} → ${App.fmtDate(due)}`, true);
     Actions.save(t);
-    App.toast(due ? `Due ${App.relDue(due).toLowerCase()}` : "Due date cleared", { label: "Undo", onClick: () => Store.save("tasks", before) });
+    App.toast(due ? `Due ${App.relDueLower(due)}` : "Due date cleared", { label: "Undo", onClick: () => Store.save("tasks", before) });
   };
   Actions.setFollowUp = (task, date) => {
     const t = copy(task);
     t.waiting = Object.assign({ personId: "", since: App.today(), followUp: "" }, t.waiting, { followUp: date });
     Actions.save(t);
-    App.toast(`Follow up ${App.relDue(date).toLowerCase()}`);
+    App.toast(`Follow up ${App.relDueLower(date)}`);
   };
 
   Actions.remove = async task => {
@@ -238,8 +238,10 @@
     if (!Model.isWaiting(t) || !t.waiting) return "";
     const who = Model.personName(t.waiting.personId);
     const due = t.waiting.followUp && t.waiting.followUp <= App.today();
-    const label = (who ? `On ${who}` : "Waiting") + (t.waiting.followUp ? ` · nudge ${App.relDue(t.waiting.followUp).toLowerCase()}` : "");
-    return `<span class="pill ${due ? "red" : "orange"}">${App.icon("hourglass")}${esc(label)}</span>`;
+    const when = t.waiting.followUp ? ` · ${App.relDueLower(t.waiting.followUp)}` : "";
+    const label = t.status === "waiting" ? (who ? `On ${who}` : "Waiting") + (t.waiting.followUp ? ` · nudge ${App.relDueLower(t.waiting.followUp)}` : "")
+      : `Follow up${who ? ` with ${who}` : ""}${when}`;
+    return `<span class="pill ${due ? "red" : "orange"}" ${t.waiting.note ? `title="${esc(t.waiting.note)}"` : ""}>${App.icon("hourglass")}${esc(label)}</span>`;
   };
   Comp.extrasPills = t => {
     let h = "";

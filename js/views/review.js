@@ -15,7 +15,7 @@
   };
 
   const item = (t, acts, meta) => `<div class="r-item" data-task-id="${esc(t.id)}">
-    <div class="t" data-open><div>${esc(t.title)}</div><div class="m">${meta || [Model.requesterName(t), Model.projectName(t.projectId), t.due ? "due " + App.relDue(t.due).toLowerCase() : ""].filter(Boolean).map(esc).join(" · ")}</div></div>
+    <div class="t" data-open><div>${esc(t.title)}</div><div class="m">${meta || [Model.requesterName(t), Model.projectName(t.projectId), t.due ? "due " + App.relDueLower(t.due) : ""].filter(Boolean).map(esc).join(" · ")}</div></div>
     <div class="acts">${acts}</div></div>`;
   const btn = (act, label, cls) => `<button type="button" class="btn xs ${cls || ""}" data-r="${act}">${label}</button>`;
 
@@ -50,7 +50,7 @@
         </div>
         ${step(1, "Wins this week", `${App.plural(won.length, "task")} finished since Monday`, won.length ? `<div>${won.slice(0, 30).map(t => item(t, "", `${esc(Model.requesterName(t) || "")}${t.completedAt ? " · " + esc(App.fmtIso(t.completedAt)) : ""}`)).join("")}</div>` : none("Nothing marked done yet this week."))}
         ${step(2, "Slipped", "Overdue: pick a new date, finish it, or let it go", overdue.length ? overdue.map(t => item(t, btn("tomorrow", "Tomorrow") + btn("monday", "Next Mon") + btn("week", "+1 week") + btn("done", "Done", "ghost") + btn("cancel", "Drop", "ghost"))).join("") : none("Nothing overdue. 🎉"))}
-        ${step(3, "Waiting on others", "Nudge anyone you need to chase", waiting.length ? waiting.map(t => item(t, btn("nudged", "I nudged them") + btn("gotit", "Got it", "ghost"), `${esc(Model.personName(t.waiting?.personId) || "Someone")}${t.waiting?.since ? " since " + esc(App.fmtDate(t.waiting.since)) : ""}${t.waiting?.followUp ? " · follow up " + esc(App.relDue(t.waiting.followUp).toLowerCase()) : ""}`)).join("") : none("You're not waiting on anyone."))}
+        ${step(3, "Waiting & follow-ups", "Nudge anyone you need to chase", waiting.length ? waiting.map(t => item(t, btn("nudged", "I nudged them") + btn("gotit", "Got it", "ghost"), `${esc(Model.personName(t.waiting?.personId) || "Someone")}${t.waiting?.since ? " since " + esc(App.fmtDate(t.waiting.since)) : ""}${t.waiting?.followUp ? " · follow up " + esc(App.relDueLower(t.waiting.followUp)) : ""}`)).join("") : none("You're not waiting on anyone."))}
         ${step(4, "Missing a next step", "Every open task should have a clear next action", noStep.length ? noStep.slice(0, 25).map(t => item(t, btn("addstep", "Add next step"))).join("") : none("Every task has a next step."))}
         ${triage.length ? step(5, "New asks to triage", "Set a status, priority, and due date", triage.map(t => item(t, btn("start", "Start") + btn("open", "Open", "ghost"))).join("")) : ""}
         ${step(triage.length ? 6 : 5, "Gone quiet", "Untouched for 2+ weeks: still relevant?", stale.length ? stale.slice(0, 25).map(t => item(t, btn("open", "Open") + btn("done", "Done", "ghost") + btn("cancel", "Drop", "ghost"), `last touched ${esc(App.relative(t.updatedAt || t.createdAt))}`)).join("") : none("Nothing has gone stale."))}

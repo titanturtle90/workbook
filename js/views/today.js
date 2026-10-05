@@ -62,7 +62,7 @@
         ${sec("today", "Due today", "orange", b.today, activeCount ? "Nothing due today." : "")}
         ${sec("followup", "Follow up today", "orange", b.followup)}
         ${sec("week", "Rest of this week", "blue", b.week)}
-        ${sec("waiting", "Waiting on others", "", b.waiting)}
+        ${sec("waiting", "Waiting & follow-ups", "", b.waiting)}
         ${sec("triage", "New asks to triage", "", b.triage)}
         ${sec("later", "Later & no date", "", b.later)}
       `;

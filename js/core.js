@@ -86,6 +86,8 @@
     if (n < 7) return App.parseDate(s).toLocaleDateString(undefined, { weekday: "long" });
     return App.fmtDate(s);
   };
+  // For use mid-sentence: "due today", "due Friday", "due Oct 12".
+  App.relDueLower = s => { const r = App.relDue(s); return /^(Today|Tomorrow|Yesterday)$/.test(r) ? r.toLowerCase() : r; };
   App.relative = iso => {
     const diff = (Date.now() - new Date(iso).getTime()) / 1000;
     if (diff < 90) return "just now";
