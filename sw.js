@@ -1,5 +1,5 @@
-const CACHE_NAME = "workbook-v18";
-const V = "?v=18";
+const CACHE_NAME = "workbook-v19";
+const V = "?v=19";
 const PRECACHE_URLS = [
   "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
   "./css/app.css" + V,

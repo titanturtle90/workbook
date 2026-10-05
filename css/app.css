@@ -960,3 +960,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 
 /* color key (Settings) */
 .color-key { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+/* task editor footer: icon-only Duplicate/Delete, and Mark done never gets squeezed */
+.sheet-foot .foot-icon { flex: 0 0 auto; width: 42px; padding: 0; }
+.sheet-foot [data-done] { flex-shrink: 0; }

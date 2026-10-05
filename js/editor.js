@@ -354,9 +354,9 @@
       <div class="ed-meta" data-meta></div>
     </div>`);
     const foot = App.el(`<div style="display:contents">
-      <button type="button" class="btn ghost foot-sm" data-dup title="Duplicate" aria-label="Duplicate">${App.icon("copy", "sm")}<span class="wide-label">Duplicate</span></button>
+      <button type="button" class="btn ghost foot-sm foot-icon" data-dup title="Duplicate" aria-label="Duplicate">${App.icon("copy", "sm")}</button>
       <button type="button" class="btn ghost foot-sm" data-save-tpl title="Save as template: reuse this task's steps and details for future asks" aria-label="Save as template">${App.icon("template", "sm")}<span class="wide-label">Save as template</span></button>
-      <button type="button" class="btn danger foot-sm" data-del title="Delete" aria-label="Delete">${App.icon("trash", "sm")}<span class="wide-label">Delete</span></button>
+      <button type="button" class="btn danger foot-sm foot-icon" data-del title="Delete (moves to Recently deleted)" aria-label="Delete">${App.icon("trash", "sm")}</button>
       <span class="spacer"></span>
       <button type="button" class="btn primary" data-done></button></div>`);
 
