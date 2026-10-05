@@ -446,7 +446,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .bcol .drop-done { margin-top: auto; border: 2px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 14px; text-align: center; font-size: 0.8rem; color: var(--text-3); }
 
 /* ---------- people & projects ---------- */
-.grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; align-items: start; }
 .pcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow-sm); cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .pcard:hover { border-color: var(--border-strong); }
 .pcard .top { display: flex; align-items: center; gap: 10px; }
@@ -648,3 +648,21 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .check-row .muted { font-weight: 400; font-size: 0.82rem; margin-left: 4px; }
 .fu-box { margin-top: 8px; padding: 12px; border-radius: var(--radius); background: var(--orange-soft); }
 .fu-box .chip.on, .waiting-box .chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* ---------- project photo + description ---------- */
+.pcard.has-cover { padding-top: 0; overflow: hidden; }
+.pcover {
+  height: 128px; margin: 0 -14px 4px; background: var(--surface-2) center / cover no-repeat;
+  border-bottom: 1px solid var(--border);
+}
+.pdesc {
+  font-size: 0.82rem; color: var(--text-2); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pbanner {
+  display: block; width: 100%; height: 200px; margin-top: 12px; border-radius: var(--radius);
+  background: var(--surface-2) center / cover no-repeat; border: 1px solid var(--border); cursor: zoom-in;
+}
+@media (min-width: 900px) { .pbanner { height: 240px; } }
+.pdesc-full { color: var(--text-2); font-size: 0.92rem; line-height: 1.5; white-space: pre-wrap; max-width: 760px; margin-bottom: 4px; }
+.shot.wide { width: 220px; height: 130px; }

@@ -99,16 +99,18 @@
   };
 
   /** A drop zone that also accepts a click (file picker / camera on phones). */
-  Shots.dropZone = (el, onFiles) => {
+  Shots.dropZone = (el, onFiles, opts) => {
+    opts = opts || {};
+    const what = opts.label || "screenshot";
     el.classList.add("shot-drop");
     el.setAttribute("tabindex", "0");
     el.setAttribute("role", "button");
     const touch = global.matchMedia("(hover: none)").matches;
     el.innerHTML = touch
-      ? `${App.icon("image", "sm")}<span><b>Add a screenshot</b> from your photos, or take a photo</span>`
-      : `${App.icon("image", "sm")}<span><b>Paste a screenshot</b> (${/Mac/.test(navigator.platform) ? "⌘V" : "Ctrl+V"}), drop an image, or <u>choose a file</u></span>`;
+      ? `${App.icon("image", "sm")}<span><b>Add a ${what}</b> from your photos, or take a photo</span>`
+      : `${App.icon("image", "sm")}<span><b>Paste a ${what}</b> (${/Mac/.test(navigator.platform) ? "⌘V" : "Ctrl+V"}), drop an image, or <u>choose a file</u></span>`;
     const input = document.createElement("input");
-    input.type = "file"; input.accept = "image/*"; input.multiple = true; input.hidden = true;
+    input.type = "file"; input.accept = "image/*"; input.multiple = !opts.single; input.hidden = true;
     el.after(input);
     const pick = () => input.click();
     el.addEventListener("click", pick);
@@ -138,6 +140,16 @@
       onFiles(files);
     };
     document.addEventListener("paste", handler);
+  };
+
+  /** Loads images into every empty [data-img] element under root (as a background cover). */
+  Shots.fillImages = root => {
+    root.querySelectorAll("[data-img]").forEach(el => {
+      if (el.style.backgroundImage) return;
+      Store.getImage(el.dataset.img).then(img => {
+        if (img && el.isConnected) { el.style.backgroundImage = `url("${img.data}")`; el.classList.add("loaded"); }
+      }).catch(() => {});
+    });
   };
 
   // ---------- full-size viewer ----------
@@ -175,6 +187,7 @@
     setTimeout(() => {
       const used = new Set();
       Store.tasks.forEach(t => (t.shots || []).forEach(s => used.add(s.id)));
+      Store.projects.forEach(p => { if (p.photo) used.add(p.photo.id); });
       ids.filter(id => !used.has(id)).forEach(id => Store.removeImage(id));
     }, delay == null ? 10000 : delay);
   };
