@@ -60,7 +60,7 @@
           <div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${p.key === "medium" ? "on" : ""}">${p.label}</button>`).join("")}</div>
         </div>
         <div class="field"><label>How it came in</label><select class="select" name="source">${sourceOptions(self ? "self" : "")}</select></div>
-        <div class="field span-2"><label>First next step <span class="muted">(optional)</span></label><input class="input" name="step" placeholder="e.g. Pull last quarter's numbers"></div>
+        <div class="field span-2"><label>Next step <span class="muted">(optional)</span></label><input class="input" name="step" placeholder="e.g. Pull last quarter's numbers"></div>
       </div>
       <button type="submit" hidden></button>
     </form>`);

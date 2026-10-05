@@ -16,8 +16,8 @@
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "Dashboard", "url": "./index.html#tasks", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
     { "name": "Today", "url": "./index.html#today", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
-    { "name": "All tasks", "url": "./index.html#tasks", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
     { "name": "People", "url": "./index.html#people", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }

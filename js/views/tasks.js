@@ -1,4 +1,4 @@
-/* All tasks: Table (sortable columns, grouping) and Board (drag between statuses), with shared search + filters. */
+/* Dashboard: Table (sortable columns, grouping) and Board (drag between statuses), with shared search + filters. */
 (function (global) {
   "use strict";
   const App = global.App, Model = global.Model, Store = global.Store, Comp = global.Comp, Actions = global.Actions;
@@ -146,7 +146,7 @@
 
       panel.innerHTML = `
         <div class="page-head">
-          <div><h1>All tasks</h1><p class="lede">${App.plural(tasks.length, "open task")}${anyFilter ? " match" : ""}</p></div>
+          <div><h1>Dashboard</h1><p class="lede">${App.plural(tasks.length, "open task")}${anyFilter ? " match" : ""}</p></div>
           <div class="head-actions">
             <div class="seg" role="tablist">
               <button type="button" data-mode="table" class="${state.mode === "table" ? "on" : ""}">${App.icon(App.isDesktop() ? "table" : "list", "sm")}${App.isDesktop() ? "Table" : "List"}</button>

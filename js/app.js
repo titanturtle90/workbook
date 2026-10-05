@@ -4,10 +4,10 @@
   const App = global.App, Model = global.Model, Store = global.Store, Views = global.Views, Editor = global.Editor;
   const esc = App.esc;
 
-  const VIEW_KEYS = ["today", "tasks", "people", "projects", "done", "review"];
+  const VIEW_KEYS = ["tasks", "today", "people", "projects", "done", "review"];
   const NAV = [
-    { key: "today", label: "Today", icon: "sun", kbd: "1" },
-    { key: "tasks", label: "All tasks", short: "Tasks", icon: "table", kbd: "2" },
+    { key: "tasks", label: "Dashboard", icon: "table", kbd: "1" },
+    { key: "today", label: "Today", icon: "sun", kbd: "2" },
     { key: "people", label: "People", icon: "users", kbd: "3" },
     { key: "projects", label: "Projects", icon: "folder", kbd: "4" },
     { key: "done", label: "Done", icon: "archive", kbd: "5" },
@@ -153,7 +153,7 @@
         <div class="seg">${[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]].map(([v, l]) => `<button type="button" data-theme="${v}" class="${theme === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
       <div class="field mt-16"><label>Open the app on</label>
-        <div class="seg">${[["today", "Today"], ["tasks", "All tasks"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:startView", "today") === v ? "on" : ""}">${l}</button>`).join("")}</div>
+        <div class="seg">${[["tasks", "Dashboard"], ["today", "Today"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:startView", "today") === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
       <div class="field mt-16"><label>Weekly capacity (hours of task work)</label>
         <input class="input" type="number" min="1" max="80" step="1" data-capacity value="${esc(Store.setting("weeklyCapacity", 30))}" style="max-width:140px">

@@ -5,14 +5,14 @@
   const Shortcuts = {};
   let focusedId = null;
 
-  const VIEWS = ["today", "tasks", "people", "projects", "done", "review"];
+  const VIEWS = ["tasks", "today", "people", "projects", "done", "review"];
   const LIST = [
     ["Anywhere", [
       [["N"], "New task"], [["Shift", "N"], "New self-assigned task"], [["M"], "Meeting mode (add several asks)"],
       [["/"], "Search tasks"], [["?"], "Show this cheat sheet"], [["Esc"], "Close / cancel"]
     ]],
     ["Go to", [
-      [["1"], "Today"], [["2"], "All tasks"], [["3"], "People"], [["4"], "Projects"], [["5"], "Done"], [["6"], "Weekly review"],
+      [["1"], "Dashboard"], [["2"], "Today"], [["3"], "People"], [["4"], "Projects"], [["5"], "Done"], [["6"], "Weekly review"],
       [["T"], "Switch table ⇄ board"]
     ]],
     ["Selected task", [

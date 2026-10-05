@@ -399,7 +399,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 /* ---------- toolbar ---------- */
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .toolbar .search { flex: 1; min-width: 200px; }
-.filter-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; margin-bottom: 18px; }
 .sort-ctl { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-2); }
 .sort-ctl .select { min-height: 32px; padding: 4px 28px 4px 10px; font-size: 0.82rem; width: auto; border-radius: 8px; }
 
@@ -431,8 +431,8 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .table-wrap { overflow-x: auto; border-radius: var(--radius); }
 
 /* ---------- board ---------- */
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 12px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; scroll-snap-type: x mandatory; }
-@media (min-width: 900px) { .board { margin: 0; padding-left: 0; padding-right: 0; grid-auto-columns: minmax(230px, 1fr); scroll-snap-type: none; } }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 12px; margin: 18px -16px 0; padding-left: 16px; padding-right: 16px; scroll-snap-type: x mandatory; }
+@media (min-width: 900px) { .board { margin: 18px 0 0; padding-left: 0; padding-right: 0; grid-auto-columns: minmax(230px, 1fr); scroll-snap-type: none; } }
 .bcol { background: var(--surface-2); border-radius: var(--radius); padding: 10px; min-height: 200px; display: flex; flex-direction: column; gap: 8px; scroll-snap-align: start; border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
 .bcol.drop-hover { border-color: var(--focus); background: color-mix(in srgb, var(--blue-soft) 70%, var(--surface-2)); }
 .bcol-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 4px; font-weight: 700; font-size: 0.85rem; }
