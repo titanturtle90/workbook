@@ -17,7 +17,6 @@
   ],
   "shortcuts": [
     { "name": "Dashboard", "url": "./index.html#tasks", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
-    { "name": "Today", "url": "./index.html#today", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
     { "name": "People", "url": "./index.html#people", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }

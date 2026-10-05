@@ -8,8 +8,7 @@ No build step: plain HTML/CSS/JS served statically (GitHub Pages), with Firebase
 
 | Area | What it does |
 | --- | --- |
-| **Dashboard** | Toggle **Table** (sortable columns, group by requester / project / status / priority / due) or **Board** (drag cards between statuses). Search plus filters for who asked, project, status, priority, due, tags, and self-assigned. On a phone the table becomes cards. |
-| **Today** | Overdue, due today, follow-ups due, the rest of this week, waiting on others, new asks to triage, then everything else. |
+| **Dashboard** | Switch between three views (top right, or press `T`): **Today** (overdue, due today, follow-ups due, the rest of this week, waiting on others, new asks to triage, then everything else), **Table** (sortable columns, group by requester / project / status / priority / due) and **Board** (drag cards between statuses). Table and Board share search plus filters for who asked, project, status, priority, due, tags, and self-assigned. On a phone the table becomes cards. |
 | **People** | Everyone who asks you for things: open asks, overdue, what you're waiting on them for, and their history. "Me" holds your self-assigned tasks. |
 | **Projects** | Name + color, progress bar, open/done counts, next due date, and a page per project. |
 | **Done** | Searchable archive of finished work, filterable by month. |
@@ -30,8 +29,8 @@ Press `?` in the app for the full list.
 | `Shift+N` | New self-assigned task | `Enter` | Open selected task |
 | `M` | Meeting mode | `X` | Mark done / reopen |
 | `/` | Search | `S` | Change status (then `1`–`8`) |
-| `1`–`6` | Dashboard, Today, People, Projects, Done, Review | `P` | Cycle priority |
-| `T` | Switch table ⇄ board | `D` | Change due date |
+| `1`–`5` | Dashboard, People, Projects, Done, Review | `P` | Cycle priority |
+| `T` | Switch Today → Table → Board | `D` | Change due date |
 | `Esc` | Close | `F` | Finish the next step |
 | | | `L` | Log a note |
 
@@ -70,7 +69,7 @@ js/model.js              task shape, statuses, priority bumping, sort/group/filt
 js/store.js              Firestore (users/{uid}/…) or local preview storage
 js/components.js         task cards/pills + shared actions (complete, status, steps…)
 js/editor.js             quick add, meeting mode, full task editor
-js/views/*.js            Dashboard (table/board), Today, People, Projects, Done, Weekly review
+js/views/*.js            Dashboard (Today/Table/Board), People, Projects, Done, Weekly review
 js/export.js             CSV, monthly summary, backup/restore
 js/shortcuts.js          keyboard shortcuts
 js/app.js                sign-in, routing, navigation, settings

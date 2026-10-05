@@ -7,15 +7,14 @@
   const VIEW_KEYS = ["tasks", "today", "people", "projects", "done", "review"];
   const NAV = [
     { key: "tasks", label: "Dashboard", icon: "table", kbd: "1" },
-    { key: "today", label: "Today", icon: "sun", kbd: "2" },
-    { key: "people", label: "People", icon: "users", kbd: "3" },
-    { key: "projects", label: "Projects", icon: "folder", kbd: "4" },
-    { key: "done", label: "Done", icon: "archive", kbd: "5" },
-    { key: "review", label: "Weekly review", icon: "review", kbd: "6" }
+    { key: "people", label: "People", icon: "users", kbd: "2" },
+    { key: "projects", label: "Projects", icon: "folder", kbd: "3" },
+    { key: "done", label: "Done", icon: "archive", kbd: "4" },
+    { key: "review", label: "Weekly review", icon: "review", kbd: "5" }
   ];
 
   // ======================= Router =======================
-  const Router = { view: "today", params: {} };
+  const Router = { view: "tasks", params: {} };
   const parseHash = () => {
     const [view, id] = (location.hash || "").replace(/^#\/?/, "").split("/");
     return { view: VIEW_KEYS.includes(view) ? view : null, id: id ? decodeURIComponent(id) : "" };
@@ -28,14 +27,16 @@
   };
   Router.render = () => {
     const { view, id } = parseHash();
-    Router.view = view || App.lsGet("wb:startView", "today");
+    // "Today" is now a view inside the Dashboard; old #today links land there.
+    if (view === "today") { Views.tasksState.mode = "today"; history.replaceState(history.state, "", "#tasks"); }
+    Router.view = view === "today" ? "tasks" : (view || "tasks");
     Router.params = Object.assign({ id }, Router.pending || {});
     Router.pending = null;
     document.querySelectorAll(".panel").forEach(p => { p.hidden = p.dataset.panel !== Router.view; });
     renderCurrent();
     window.scrollTo({ top: 0 });
     renderNav();
-    if (Router.params.focusSearch && Views.tasks.focusSearch) Views.tasks.focusSearch(document.getElementById("panel-tasks"));
+    if (Router.params.focusSearch) { Router.params.focusSearch = false; Views.tasks.focusSearch(document.getElementById("panel-tasks")); }
   };
   Router.toggleTaskMode = () => {
     if (Router.view !== "tasks") { Router.go("tasks"); return; }
@@ -68,21 +69,20 @@
     const c = counts();
     const cur = Router.view;
     const side = document.getElementById("sideNav");
-    const countFor = key => key === "today" ? (c.urgent ? `<span class="count ${c.overdue ? "alert" : ""}">${c.urgent}</span>` : "")
-      : key === "tasks" ? `<span class="count">${c.active}</span>`
+    const countFor = key => key === "tasks" ? (c.urgent ? `<span class="count ${c.overdue ? "alert" : ""}" title="Overdue, due today, and follow-ups">${c.urgent}</span>` : `<span class="count">${c.active}</span>`)
       : key === "done" ? (c.doneWeek ? `<span class="count">${c.doneWeek}</span>` : "")
       : key === "review" ? (c.reviewDue ? `<span class="count alert">•</span>` : "") : "";
     const projects = [...Store.projects.values()].filter(p => !p.archived)
       .map(p => ({ p, n: [...Store.tasks.values()].filter(t => t.projectId === p.id && Model.isActive(t)).length }))
       .filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 8);
-    side.innerHTML = NAV.map((n, i) => (i === 4 ? `<div class="side-sep"></div>` : "") +
+    side.innerHTML = NAV.map((n, i) => (i === 3 ? `<div class="side-sep"></div>` : "") +
       `<a class="side-item ${cur === n.key ? "active" : ""}" href="#${n.key}">${App.icon(n.icon)}<span>${esc(n.label)}</span>${countFor(n.key)}<kbd>${n.kbd}</kbd></a>`).join("") +
       (projects.length ? `<div class="side-label">Active projects</div>` + projects.map(({ p, n }) => `<a class="side-item side-project ${cur === "projects" && Router.params.id === p.id ? "active" : ""}" href="#projects/${esc(p.id)}"><span class="swatch" style="background:${esc(p.color)}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="count">${n}</span></a>`).join("") : "");
 
     const tabs = [NAV[0], NAV[1], NAV[2], NAV[3], { key: "more", label: "More", icon: "more" }];
-    const tabActive = ["done", "review"].includes(cur) ? "more" : cur;
+    const tabActive = cur === "review" ? "more" : cur;
     document.getElementById("tabbar").innerHTML = tabs.map(n => {
-      const badge = n.key === "today" && c.urgent ? `<span class="badge ${c.overdue ? "" : "soft"}">${c.urgent > 99 ? "99+" : c.urgent}</span>` : n.key === "more" && c.reviewDue ? `<span class="badge soft">1</span>` : "";
+      const badge = n.key === "tasks" && c.urgent ? `<span class="badge ${c.overdue ? "" : "soft"}">${c.urgent > 99 ? "99+" : c.urgent}</span>` : n.key === "more" && c.reviewDue ? `<span class="badge soft">1</span>` : "";
       return `<button class="tab ${tabActive === n.key ? "active" : ""}" type="button" data-tab="${n.key}"><span class="ico">${App.icon(n.icon)}${badge}</span>${esc(n.short || n.label)}</button>`;
     }).join("");
     document.title = c.urgent ? `(${c.urgent}) Workbook` : "Workbook";
@@ -96,7 +96,6 @@
   function openMore() {
     const c = counts();
     const body = App.el(`<div>
-      <button type="button" class="mrow" data-go="done">${App.icon("archive")}<div class="grow"><div>Done</div><div class="sub">${c.doneWeek} finished this week</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-go="review">${App.icon("review")}<div class="grow"><div>Weekly review ${c.reviewDue ? `<span class="pill orange" style="margin-left:6px">Due</span>` : ""}</div><div class="sub">Wins, slips, follow-ups, next week</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="meeting">${App.icon("meeting")}<div class="grow"><div>Meeting mode</div><div class="sub">Capture several asks quickly</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="self">${App.icon("me")}<div class="grow"><div>New self-assigned task</div><div class="sub">Something you're asking of yourself</div></div>${App.icon("right", "sm")}</button>
@@ -152,8 +151,8 @@
       <div class="field mt-16"><label>Appearance</label>
         <div class="seg">${[["auto", "Auto"], ["light", "Light"], ["dark", "Dark"]].map(([v, l]) => `<button type="button" data-theme="${v}" class="${theme === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
-      <div class="field mt-16"><label>Open the app on</label>
-        <div class="seg">${[["tasks", "Dashboard"], ["today", "Today"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:startView", "today") === v ? "on" : ""}">${l}</button>`).join("")}</div>
+      <div class="field mt-16"><label>Dashboard opens on</label>
+        <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["board", "Board"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:dashStart", "last") === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
       <div class="field mt-16"><label>Weekly capacity (hours of task work)</label>
         <input class="input" type="number" min="1" max="80" step="1" data-capacity value="${esc(Store.setting("weeklyCapacity", 30))}" style="max-width:140px">
@@ -171,7 +170,7 @@
       if (v === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v;
       body.querySelectorAll("[data-theme]").forEach(x => x.classList.toggle("on", x === b));
     });
-    body.querySelectorAll("[data-start]").forEach(b => b.onclick = () => { App.lsSet("wb:startView", b.dataset.start); body.querySelectorAll("[data-start]").forEach(x => x.classList.toggle("on", x === b)); });
+    body.querySelectorAll("[data-start]").forEach(b => b.onclick = () => { App.lsSet("wb:dashStart", b.dataset.start); body.querySelectorAll("[data-start]").forEach(x => x.classList.toggle("on", x === b)); });
     const cap = body.querySelector("[data-capacity]");
     cap.onchange = () => { const n = Math.max(1, Math.min(80, Number(cap.value) || 30)); cap.value = n; Store.setSetting("weeklyCapacity", n); };
     body.querySelectorAll("[data-a]").forEach(b => b.onclick = () => doAction(b.dataset.a));

@@ -1,4 +1,4 @@
-/* Today dashboard: what needs you now, in order of urgency. */
+/* Today: what needs you now, in order of urgency. Shown as the "Today" view of the Dashboard. */
 (function (global) {
   "use strict";
   const App = global.App, Model = global.Model, Store = global.Store, Comp = global.Comp;
@@ -29,10 +29,17 @@
   };
 
   Views.today = {
-    render(panel) {
-      const b = Views.todayBuckets();
+    greeting() {
       const hour = new Date().getHours();
       const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+      return `${greet} · ${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}`;
+    },
+    /**
+     * Renders the Today stats + sections into `root` (the Dashboard panel's body).
+     * Task clicks are handled by the Dashboard panel's own Comp.bindTasks; `rerender` redraws the Dashboard.
+     */
+    renderInto(root, rerender) {
+      const b = Views.todayBuckets();
       const allFollow = [...Store.tasks.values()].filter(Model.followUpDue).length;
       const weekCount = b.week.length + b.today.length;
       const col = collapsed();
@@ -43,14 +50,7 @@
       }) : "";
       const activeCount = [...Store.tasks.values()].filter(Model.isActive).length;
 
-      panel.innerHTML = `
-        <div class="page-head">
-          <div><h1>${greet}</h1><p class="lede">${App.esc(new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }))} · ${App.plural(activeCount, "open task")}</p></div>
-          <div class="head-actions">
-            <button class="btn sm ghost" type="button" data-new-self>${App.icon("me", "sm")}Self-assigned</button>
-            <button class="btn sm primary" type="button" data-new>${App.icon("plus", "sm")}New task</button>
-          </div>
-        </div>
+      root.innerHTML = `
         <div class="stats">
           <button class="stat ${b.overdue.length ? "red" : "zero"}" type="button" data-jump="overdue"><div class="n">${b.overdue.length}</div><div class="l">Overdue</div></button>
           <button class="stat ${b.today.length ? "orange" : "zero"}" type="button" data-jump="today"><div class="n">${b.today.length}</div><div class="l">Due today</div></button>
@@ -66,20 +66,18 @@
         ${sec("triage", "New asks to triage", "", b.triage)}
         ${sec("later", "Later & no date", "", b.later)}
       `;
-      Comp.bindTasks(panel);
-      panel.querySelector("[data-new]").onclick = () => global.Editor.quickAdd();
-      panel.querySelector("[data-new-self]").onclick = () => global.Editor.quickAdd({ self: true });
-      panel.querySelectorAll("[data-jump]").forEach(btn => btn.onclick = () => {
+      root.querySelectorAll("[data-jump]").forEach(btn => btn.onclick = () => {
         const id = btn.dataset.jump;
-        const c = collapsed(); if (c[id]) { delete c[id]; App.lsSet("wb:todayCollapsed", c); Views.today.render(panel); }
-        const el = panel.querySelector(`[data-section="${id}"]`);
+        const c = collapsed();
+        if (c[id]) { delete c[id]; App.lsSet("wb:todayCollapsed", c); rerender(); }
+        const el = document.querySelector(`#panel-tasks [data-section="${id}"]`);
         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
         else App.toast("Nothing here right now");
       });
-      panel.querySelectorAll("[data-collapse]").forEach(btn => btn.onclick = e => {
+      root.querySelectorAll("[data-collapse]").forEach(btn => btn.onclick = e => {
         e.stopPropagation();
         const c = collapsed(); c[btn.dataset.collapse] = !c[btn.dataset.collapse]; App.lsSet("wb:todayCollapsed", c);
-        Views.today.render(panel);
+        rerender();
       });
     }
   };

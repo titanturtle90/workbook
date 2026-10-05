@@ -1,13 +1,15 @@
-/* Dashboard: Table (sortable columns, grouping) and Board (drag between statuses), with shared search + filters. */
+/* Dashboard: Today (what needs you now), Table (sortable columns, grouping) and Board (drag between statuses). Table and Board share search + filters. */
 (function (global) {
   "use strict";
   const App = global.App, Model = global.Model, Store = global.Store, Comp = global.Comp, Actions = global.Actions;
   const esc = App.esc;
   const Views = global.Views = global.Views || {};
 
-  const DEFAULT = { mode: "table", sort: "smart", dir: "asc", group: "", filters: { requesters: [], projects: [], statuses: [], priorities: [], tags: [], self: null, due: "" } };
+  const DEFAULT = { mode: "today", sort: "smart", dir: "asc", group: "", filters: { requesters: [], projects: [], statuses: [], priorities: [], tags: [], self: null, due: "" } };
   const state = Object.assign({}, DEFAULT, App.lsGet("wb:tasksView", {}));
   state.filters = Object.assign({}, DEFAULT.filters, state.filters || {});
+  const dashStart = App.lsGet("wb:dashStart", "last"); // Settings → "Dashboard opens on"
+  if (dashStart !== "last") state.mode = dashStart;
   let query = "";
   const persist = () => App.lsSet("wb:tasksView", { mode: state.mode, sort: state.sort, dir: state.dir, group: state.group, filters: state.filters });
 
@@ -137,24 +139,44 @@
   // ---------- render ----------
   Views.tasks = {
     render(panel, params) {
-      if (params && params.focusSearch) params.focusSearch = false;
       const f = state.filters;
       const tasks = filtered().sort(Model.comparator(state.sort, state.dir));
       const anyFilter = query || f.requesters.length || f.projects.length || f.statuses.length || f.priorities.length || f.tags.length || f.self !== null || f.due;
       const hadFocus = document.activeElement && document.activeElement.id === "taskSearch";
       const caret = hadFocus ? document.activeElement.selectionStart : null;
+      const rerender = () => Views.tasks.render(panel);
+      const isToday = state.mode === "today";
+      const activeCount = [...Store.tasks.values()].filter(Model.isActive).length;
 
-      panel.innerHTML = `
+      const head = `
         <div class="page-head">
-          <div><h1>Dashboard</h1><p class="lede">${App.plural(tasks.length, "open task")}${anyFilter ? " match" : ""}</p></div>
+          <div><h1>Dashboard</h1><p class="lede">${isToday ? `${esc(Views.today.greeting())} · ${App.plural(activeCount, "open task")}` : `${App.plural(tasks.length, "open task")}${anyFilter ? " match" : ""}`}</p></div>
           <div class="head-actions">
-            <div class="seg" role="tablist">
+            <div class="seg" role="tablist" title="Switch view (T)">
+              <button type="button" data-mode="today" class="${isToday ? "on" : ""}">${App.icon("sun", "sm")}Today</button>
               <button type="button" data-mode="table" class="${state.mode === "table" ? "on" : ""}">${App.icon(App.isDesktop() ? "table" : "list", "sm")}${App.isDesktop() ? "Table" : "List"}</button>
               <button type="button" data-mode="board" class="${state.mode === "board" ? "on" : ""}">${App.icon("board", "sm")}Board</button>
             </div>
+            ${isToday ? `<button class="btn sm ghost" type="button" data-new-self title="New self-assigned task (Shift+N)">${App.icon("me", "sm")}Self-assigned</button>` : ""}
             <button class="btn sm primary" type="button" data-new>${App.icon("plus", "sm")}New</button>
           </div>
-        </div>
+        </div>`;
+
+      const bindHead = () => {
+        panel.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { state.mode = b.dataset.mode; persist(); rerender(); });
+        panel.querySelector("[data-new]").onclick = () => global.Editor.quickAdd(isToday ? {} : { self: f.self === true, requesterId: f.requesters.length === 1 ? f.requesters[0] : "", projectId: f.projects.length === 1 ? f.projects[0] : "" });
+        const ns = panel.querySelector("[data-new-self]"); if (ns) ns.onclick = () => global.Editor.quickAdd({ self: true });
+      };
+
+      if (isToday) {
+        panel.innerHTML = head + `<div data-today></div>`;
+        Comp.bindTasks(panel);
+        bindHead();
+        Views.today.renderInto(panel.querySelector("[data-today]"), rerender);
+        return;
+      }
+
+      panel.innerHTML = head + `
         <div class="toolbar">
           <div class="search"><span>${App.icon("search", "sm")}</span><input type="search" id="taskSearch" placeholder="Search asks, people, steps, notes…" value="${esc(query)}" autocomplete="off">${App.isDesktop() ? "<kbd>/</kbd>" : ""}</div>
           <label class="sort-ctl">Sort <select class="select" data-sort-select>${Model.SORTS.map(s => `<option value="${s.key}" ${state.sort === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select></label>
@@ -173,14 +195,12 @@
         ${tasks.length || state.mode === "board" ? (state.mode === "board" ? renderBoard(tasks) : renderTable(tasks)) :
           `<div class="empty"><div class="big">${anyFilter ? "🔍" : "🗂️"}</div><h3>${anyFilter ? "No matching tasks" : "No open tasks"}</h3><p>${anyFilter ? "Try clearing a filter." : "Press N to add one."}</p></div>`}
       `;
-      const rerender = () => Views.tasks.render(panel);
       Comp.bindTasks(panel);
+      bindHead();
       const search = panel.querySelector("#taskSearch");
       search.addEventListener("input", App.debounce(() => { query = search.value; rerender(); }, 120));
       search.addEventListener("keydown", e => { if (e.key === "Escape") { search.value = ""; query = ""; search.blur(); rerender(); } if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); search.blur(); global.Shortcuts && global.Shortcuts.focusFirst(); } });
       if (hadFocus) { search.focus(); try { search.setSelectionRange(caret, caret); } catch (e) { /* ignore */ } }
-      panel.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { state.mode = b.dataset.mode; persist(); rerender(); });
-      panel.querySelector("[data-new]").onclick = () => global.Editor.quickAdd({ self: f.self === true, requesterId: f.requesters.length === 1 ? f.requesters[0] : "", projectId: f.projects.length === 1 ? f.projects[0] : "" });
       panel.querySelector("[data-sort-select]").onchange = e => { state.sort = e.target.value; state.dir = "asc"; persist(); rerender(); };
       const g = panel.querySelector("[data-group-select]"); if (g) g.onchange = e => { state.group = e.target.value; persist(); rerender(); };
       panel.querySelectorAll("[data-filter]").forEach(b => b.onclick = () => openFilterMenu(b, b.dataset.filter, rerender));
@@ -192,7 +212,15 @@
       });
       if (state.mode === "board") bindBoard(panel);
     },
-    focusSearch(panel) { const s = panel.querySelector("#taskSearch"); if (s) { s.focus(); s.select(); } },
-    setMode(panel, mode) { state.mode = mode || (state.mode === "table" ? "board" : "table"); persist(); Views.tasks.render(panel); }
+    focusSearch(panel) {
+      if (state.mode === "today") Views.tasks.setMode(panel, "table"); // search lives in Table/Board
+      const s = panel.querySelector("#taskSearch"); if (s) { s.focus(); s.select(); }
+    },
+    /** Switch to a mode, or cycle Today → Table → Board. */
+    setMode(panel, mode) {
+      const order = ["today", "table", "board"];
+      state.mode = mode || order[(order.indexOf(state.mode) + 1) % order.length];
+      persist(); Views.tasks.render(panel);
+    }
   };
 })(window);
