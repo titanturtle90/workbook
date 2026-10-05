@@ -33,6 +33,7 @@ Press `?` in the app for the full list.
 | `/` | Search | `S` | Change status (then `1`–`8`) |
 | `1`–`5` | Dashboard, People, Projects, Done, Review | `P` | Cycle priority |
 | `T` | Switch Today → Table → Board | `D` | Change due date |
+| `[` | Collapse / expand the side menu |
 | `Esc` | Close | `F` | Finish the next step |
 | | | `L` | Log a note |
 

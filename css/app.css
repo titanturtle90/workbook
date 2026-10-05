@@ -674,3 +674,39 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
   .head-actions .seg button { padding: 0 10px; }
   #panel-tasks .head-actions [data-new] { display: none; } /* the floating + button does this on phones */
 }
+
+/* ---------- collapsible sidebar (desktop) ---------- */
+@media (min-width: 900px) {
+  .shell { transition: grid-template-columns 0.22s var(--ease); }
+  .sidebar { overflow-x: hidden; }
+  .side-item, .side-link, .side-new { white-space: nowrap; }
+  .side-toggle {
+    margin-left: auto; width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center; color: #8ea0bf;
+  }
+  .side-toggle:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+  .shell.side-collapsed { grid-template-columns: 68px 1fr; }
+  .shell.side-collapsed .main-wrap { max-width: none; } /* use the room you just freed up */
+  .side-collapsed .sidebar { padding: 18px 10px; }
+  .side-collapsed .side-text, .side-collapsed .sidebar kbd { display: none; }
+  .side-collapsed .side-brand { flex-direction: column; gap: 10px; padding: 0; }
+  .side-collapsed .side-toggle { margin-left: 0; transform: scaleX(-1); }
+  .side-collapsed .side-new { justify-content: center; padding: 0; gap: 0; }
+  .side-collapsed .side-item, .side-collapsed .side-link { justify-content: center; padding: 10px 0; position: relative; }
+  /* counts become a small badge on the icon; only the "needs attention" ones show */
+  .side-collapsed .side-item .count:not(.alert) { display: none; }
+  .side-collapsed .side-item .count.alert {
+    position: absolute; top: 2px; right: 6px; margin: 0;
+    min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; font-size: 0.6rem;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .side-collapsed .side-label { height: 1px; padding: 0; margin: 8px 4px; background: rgba(255, 255, 255, 0.08); }
+  .side-collapsed .side-project .swatch { width: 12px; height: 12px; }
+}
+@media (min-width: 900px) {
+  .side-brand .side-text { min-width: 0; flex: 1; }
+  .side-brand .brand-sub { white-space: nowrap; overflow: hidden; }
+  .side-brand .brand-sub .txt { overflow: hidden; text-overflow: ellipsis; }
+  .side-item:hover, .side-link:hover { text-decoration: none; }
+}

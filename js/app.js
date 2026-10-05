@@ -76,8 +76,8 @@
       .map(p => ({ p, n: [...Store.tasks.values()].filter(t => t.projectId === p.id && Model.isActive(t)).length }))
       .filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 8);
     side.innerHTML = NAV.map((n, i) => (i === 3 ? `<div class="side-sep"></div>` : "") +
-      `<a class="side-item ${cur === n.key ? "active" : ""}" href="#${n.key}">${App.icon(n.icon)}<span>${esc(n.label)}</span>${countFor(n.key)}<kbd>${n.kbd}</kbd></a>`).join("") +
-      (projects.length ? `<div class="side-label">Active projects</div>` + projects.map(({ p, n }) => `<a class="side-item side-project ${cur === "projects" && Router.params.id === p.id ? "active" : ""}" href="#projects/${esc(p.id)}"><span class="swatch" style="background:${esc(p.color)}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="count">${n}</span></a>`).join("") : "");
+      `<a class="side-item ${cur === n.key ? "active" : ""}" href="#${n.key}" title="${esc(n.label)} (${n.kbd})">${App.icon(n.icon)}<span class="side-text">${esc(n.label)}</span>${countFor(n.key)}<kbd>${n.kbd}</kbd></a>`).join("") +
+      (projects.length ? `<div class="side-label"><span class="side-text">Active projects</span></div>` + projects.map(({ p, n }) => `<a class="side-item side-project ${cur === "projects" && Router.params.id === p.id ? "active" : ""}" href="#projects/${esc(p.id)}" title="${esc(p.name)}"><span class="swatch" style="background:${esc(p.color)}"></span><span class="side-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="count">${n}</span></a>`).join("") : "");
 
     const tabs = [NAV[0], NAV[1], NAV[2], NAV[3], { key: "more", label: "More", icon: "more" }];
     const tabActive = cur === "review" ? "more" : cur;
@@ -146,6 +146,22 @@
     Editor.quickAdd({ files });
   });
   document.getElementById("sideNew").onclick = () => Editor.quickAdd();
+
+  // Collapsible sidebar (desktop): icons stay visible; remembered per device.
+  const sideToggle = document.getElementById("sideToggle");
+  const applySidebar = collapsed => {
+    document.getElementById("shell").classList.toggle("side-collapsed", collapsed);
+    const label = collapsed ? "Expand menu" : "Collapse menu";
+    sideToggle.setAttribute("aria-label", label);
+    sideToggle.title = `${label} ([)`;
+  };
+  App.toggleSidebar = () => {
+    const collapsed = !document.getElementById("shell").classList.contains("side-collapsed");
+    App.lsSet("wb:sideCollapsed", collapsed);
+    applySidebar(collapsed);
+  };
+  sideToggle.onclick = App.toggleSidebar;
+  applySidebar(!!App.lsGet("wb:sideCollapsed", false));
 
   // Re-render on data changes (skip while the user is mid-drag on the board).
   App.on("data", () => { if (document.querySelector(".tcard.dragging")) return; renderCurrent(); renderNav(); });

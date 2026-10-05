@@ -13,7 +13,7 @@
     ]],
     ["Go to", [
       [["1"], "Dashboard"], [["2"], "People"], [["3"], "Projects"], [["4"], "Done"], [["5"], "Weekly review"],
-      [["T"], "Switch Today → Table → Board"]
+      [["T"], "Switch Today → Table → Board"], [["["], "Collapse / expand the side menu"]
     ]],
     ["Selected task", [
       [["J"], "Next task (or ↓)"], [["K"], "Previous task (or ↑)"], [["Enter"], "Open"], [["X"], "Mark done / reopen"],
@@ -94,6 +94,7 @@
     if (k === "/") { handled(); global.Router.go("tasks", { focusSearch: true }); return; }
     if (/^[1-5]$/.test(k)) { handled(); global.Router.go(VIEWS[Number(k) - 1]); return; }
     if (k === "t") { handled(); global.Router.toggleTaskMode(); return; }
+    if (k === "[") { handled(); App.toggleSidebar(); return; }
     if (k === "j" || k === "ArrowDown") { handled(); move(1); return; }
     if (k === "k" || k === "ArrowUp") { handled(); move(-1); return; }
     if (k === "Escape") { setFocus(null); return; }
