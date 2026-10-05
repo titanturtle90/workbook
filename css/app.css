@@ -877,7 +877,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
   --pr-urgent: #dc2626;       --pr-urgent-bg: #dc2626;  --pr-urgent-fg: #ffffff;
   --pr-high: #c2410c;         --pr-high-bg: #ffedd5;
   --pr-medium: #a16207;       --pr-medium-bg: #fef3c7;
-  --pr-low: #64748b;          --pr-low-bg: #f1f5f9;
+  --pr-low: #4d7c0f;          --pr-low-bg: #ecfccb;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -892,7 +892,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
     --pr-urgent: #f87171;       --pr-urgent-bg: #dc2626;  --pr-urgent-fg: #ffffff;
     --pr-high: #fdba74;         --pr-high-bg: #3b2210;
     --pr-medium: #fcd34d;       --pr-medium-bg: #33290d;
-    --pr-low: #94a3b8;          --pr-low-bg: #1c2638;
+    --pr-low: #bef264;          --pr-low-bg: #1f2a0e;
   }
 }
 :root[data-theme="dark"] {
@@ -907,7 +907,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
   --pr-urgent: #f87171;       --pr-urgent-bg: #dc2626;  --pr-urgent-fg: #ffffff;
   --pr-high: #fdba74;         --pr-high-bg: #3b2210;
   --pr-medium: #fcd34d;       --pr-medium-bg: #33290d;
-  --pr-low: #94a3b8;          --pr-low-bg: #1c2638;
+  --pr-low: #bef264;          --pr-low-bg: #1f2a0e;
 }
 
 /* status pills: colored dot + tint */
@@ -932,7 +932,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .prio-urgent { background: var(--pr-urgent-bg); }
 .prio-high { background: var(--pr-high); }
 .prio-medium { background: var(--pr-medium); }
-.prio-low { background: var(--surface-3); }
+.prio-low { background: var(--pr-low); }
 
 /* calendar chips + dots follow the priority too */
 .cal-chip.p-urgent { border-left-color: var(--pr-urgent-bg); }
@@ -940,6 +940,7 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .cal-chip.p-medium { border-left-color: var(--pr-medium); }
 .cal-dots .p-urgent { background: var(--pr-urgent-bg); }
 .cal-dots .p-high { background: var(--pr-high); }
+.cal-chip.p-low { border-left-color: var(--pr-low); }
 .cal-dots span:not([class]), .cal-dots .p-medium { background: var(--pr-medium); }
 .cal-dots .p-low { background: var(--pr-low); }
 .cal-chip.fu { border-left-color: var(--st-waiting); color: var(--st-waiting); }
