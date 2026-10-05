@@ -76,6 +76,7 @@
     unsubs.forEach(u => { try { u(); } catch (e) { /* ignore */ } });
     unsubs = [];
     COLS.forEach(col => Store[col].clear());
+    imageCache.clear();
     Store.loaded.clear();
   };
 
@@ -125,13 +126,57 @@
   Store.setting = (key, fallback) => { const v = Store.settings()[key]; return v === undefined ? fallback : v; };
   Store.setSetting = (key, value) => { const s = Object.assign({}, Store.settings(), { id: "settings" }); s[key] = value; return Store.save("meta", s); };
 
+  // ---------- screenshots ----------
+  // Kept in their own collection (users/{uid}/images/{id}) and fetched only when shown,
+  // so the task list stays light. Each doc: { id, data: "data:image/…;base64,…", w, h, createdAt }.
+  const imageCache = new Map();
+  const LOCAL_IMAGES = LOCAL_PREFIX + "images";
+  Store.putImage = function (img) {
+    imageCache.set(img.id, img);
+    if (Store.mode === "local") {
+      const all = App.lsGet(LOCAL_IMAGES, {});
+      all[img.id] = img;
+      try { localStorage.setItem(LOCAL_IMAGES, JSON.stringify(all)); return Promise.resolve(img); }
+      catch (e) { imageCache.delete(img.id); return Promise.reject(new Error("This browser's preview storage is full. Sign in to store more screenshots.")); }
+    }
+    return userDoc.collection("images").doc(img.id).set(clean(img)).then(() => img);
+  };
+  Store.getImage = function (id) {
+    if (imageCache.has(id)) return Promise.resolve(imageCache.get(id));
+    if (Store.mode === "local") {
+      const img = App.lsGet(LOCAL_IMAGES, {})[id] || null;
+      if (img) imageCache.set(id, img);
+      return Promise.resolve(img);
+    }
+    return userDoc.collection("images").doc(id).get().then(snap => {
+      if (!snap.exists) return null;
+      const img = Object.assign({ id }, snap.data());
+      imageCache.set(id, img);
+      return img;
+    });
+  };
+  Store.removeImage = function (id) {
+    imageCache.delete(id);
+    if (Store.mode === "local") {
+      const all = App.lsGet(LOCAL_IMAGES, {}); delete all[id];
+      App.lsSet(LOCAL_IMAGES, all);
+      return Promise.resolve();
+    }
+    return userDoc.collection("images").doc(id).delete().catch(err => console.error(err));
+  };
+  Store.allImages = function () {
+    if (Store.mode === "local") return Promise.resolve(Object.values(App.lsGet(LOCAL_IMAGES, {})));
+    return userDoc.collection("images").get().then(snap => snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
+  };
+
   // ---------- preview data left on this device (offered for import after sign-in) ----------
   Store.localPreviewData = () => {
     const out = {};
     COLS.forEach(col => { out[col] = Object.values(App.lsGet(LOCAL_PREFIX + col, {})); });
+    out.images = Object.values(App.lsGet(LOCAL_IMAGES, {}));
     return out;
   };
-  Store.clearLocalPreview = () => COLS.forEach(col => { try { localStorage.removeItem(LOCAL_PREFIX + col); } catch (e) { /* ignore */ } });
+  Store.clearLocalPreview = () => COLS.concat("images").forEach(col => { try { localStorage.removeItem(LOCAL_PREFIX + col); } catch (e) { /* ignore */ } });
 
   global.Store = Store;
 })(window);

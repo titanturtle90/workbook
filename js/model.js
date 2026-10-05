@@ -66,6 +66,7 @@
       log: [],
       waiting: { personId: "", since: "", followUp: "" },
       links: [],
+      shots: [],
       estimate: null,
       tags: [],
       recurrence: "",

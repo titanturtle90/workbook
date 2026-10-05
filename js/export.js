@@ -75,9 +75,11 @@
     foot.querySelector("[data-dl]").onclick = () => App.download(`workbook-summary-${sel.value}.txt`, out.textContent);
   };
 
-  Exporter.backup = () => {
-    const data = { app: "workbook", version: 1, exportedAt: new Date().toISOString(),
-      tasks: [...Store.tasks.values()], people: [...Store.people.values()], projects: [...Store.projects.values()] };
+  Exporter.backup = async () => {
+    let images = [];
+    try { images = await Store.allImages(); } catch (e) { App.toast("Screenshots couldn't be included (offline?)"); }
+    const data = { app: "workbook", version: 2, exportedAt: new Date().toISOString(),
+      tasks: [...Store.tasks.values()], people: [...Store.people.values()], projects: [...Store.projects.values()], images };
     App.download(`workbook-backup-${App.today()}.json`, JSON.stringify(data, null, 2), "application/json");
   };
 
@@ -92,6 +94,7 @@
       const n = (data.tasks || []).length;
       const ok = await App.confirm({ title: "Restore backup?", text: `Adds or updates ${App.plural(n, "task")}, ${App.plural((data.people || []).length, "person", "people")} and ${App.plural((data.projects || []).length, "project")}. Nothing else is deleted.`, okLabel: "Restore" });
       if (!ok) return;
+      for (const img of data.images || []) { try { await Store.putImage(img); } catch (e) { console.error(e); } }
       await Store.saveMany("people", data.people || []);
       await Store.saveMany("projects", data.projects || []);
       await Store.saveMany("tasks", data.tasks || []);
@@ -106,7 +109,7 @@
       <button type="button" class="mrow" data-x="csv-open">${App.icon("table")}<div class="grow"><div>Open tasks → Excel (CSV)</div><div class="sub">${App.plural(open, "task")} with every column</div></div>${App.icon("download", "sm")}</button>
       <button type="button" class="mrow" data-x="csv-all">${App.icon("table")}<div class="grow"><div>All tasks, including finished → Excel (CSV)</div><div class="sub">${App.plural(Store.tasks.size, "task")}</div></div>${App.icon("download", "sm")}</button>
       <button type="button" class="mrow" data-x="summary">${App.icon("review")}<div class="grow"><div>Monthly summary</div><div class="sub">“What I did this month” for status updates</div></div>${App.icon("right", "sm")}</button>
-      <button type="button" class="mrow" data-x="backup">${App.icon("archive")}<div class="grow"><div>Download a backup</div><div class="sub">Everything as a JSON file</div></div>${App.icon("download", "sm")}</button>
+      <button type="button" class="mrow" data-x="backup">${App.icon("archive")}<div class="grow"><div>Download a backup</div><div class="sub">Everything, including screenshots, as a JSON file</div></div>${App.icon("download", "sm")}</button>
       <button type="button" class="mrow" data-x="restore">${App.icon("upload")}<div class="grow"><div>Restore from a backup</div><div class="sub">Merges a backup file back in</div></div>${App.icon("right", "sm")}</button>
     </div>`);
     App.sheet.open({ title: "Export & reports", body, narrow: true });

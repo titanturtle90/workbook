@@ -119,6 +119,7 @@
     const before = copy(task);
     Store.remove("tasks", task.id);
     App.toast("Task deleted", { label: "Undo", onClick: () => Store.save("tasks", before) });
+    global.Shots.cleanupLater((before.shots || []).map(s => s.id));
     return true;
   };
 
@@ -245,6 +246,7 @@
     const sp = Model.stepProgress(t);
     if (sp.total) h += `<span class="pill gray" title="Steps done">${App.icon("check")}${sp.done}/${sp.total}</span>`;
     if (t.recurrence) h += `<span class="pill gray" title="${esc(Model.recurrence(t.recurrence).label)}">${App.icon("repeat")}</span>`;
+    if (t.shots && t.shots.length) h += `<span class="pill gray btnish" data-act="shot" title="View screenshot">${App.icon("image")}${t.shots.length}</span>`;
     if (t.links && t.links.length) h += `<span class="pill gray" title="Links">${App.icon("link")}${t.links.length}</span>`;
     if (t.estimate) h += `<span class="pill gray" title="Estimate">${App.icon("clock")}${esc(fmtHours(t.estimate))}</span>`;
     return h;
@@ -303,6 +305,7 @@
       if (act === "priority") { Actions.priorityMenu(actEl, t); return; }
       if (act === "due") { Actions.dueMenu(actEl, t); return; }
       if (act === "more") { Actions.moreMenu(actEl, t); return; }
+      if (act === "shot") { if (t.shots && t.shots[0]) global.Shots.view(t.shots[0].id); return; }
       if (e.target.closest("a")) return;
       global.Editor.open(t.id);
     });

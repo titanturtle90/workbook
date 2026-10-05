@@ -61,6 +61,9 @@
         </div>
         <div class="field"><label>How it came in</label><select class="select" name="source">${sourceOptions(self ? "self" : "")}</select></div>
         <div class="field span-2"><label>Next step <span class="muted">(optional)</span></label><input class="input" name="step" placeholder="e.g. Pull last quarter's numbers"></div>
+        <div class="field span-2"><label>Screenshot of the request <span class="muted">(optional)</span></label>
+          <div class="shots" data-shot-strip></div><div data-shot-drop></div>
+        </div>
       </div>
       <button type="submit" hidden></button>
     </form>`);
@@ -83,9 +86,28 @@
     due.addEventListener("change", markDate); markDate();
     f.querySelectorAll("[data-prio] button").forEach(b => b.addEventListener("click", () => { prio = b.dataset.v; f.querySelectorAll("[data-prio] button").forEach(x => x.classList.toggle("on", x === b)); }));
 
-    const submit = (openAfter) => {
+    // screenshots: compressed now, saved with the task
+    const pending = [];
+    const strip = f.querySelector("[data-shot-strip]");
+    const paintShots = () => global.Shots.renderStrip(strip, pending, { onRemove: id => { pending.splice(pending.findIndex(x => x.id === id), 1); paintShots(); } });
+    const addFiles = async files => {
+      try { pending.push(...await global.Shots.prepare(files)); paintShots(); }
+      catch (err) { App.toast(err.message || "Couldn't add that image"); }
+    };
+    global.Shots.dropZone(f.querySelector("[data-shot-drop]"), addFiles);
+    global.Shots.onPaste(body, addFiles);
+    if (defaults.files && defaults.files.length) addFiles(defaults.files);
+
+    let saving = false;
+    const submit = async (openAfter) => {
+      if (saving) return;
       if (!title.value.trim()) { title.focus(); App.toast("Add a short description of the ask"); return; }
+      saving = true;
+      let shots = [];
+      try { shots = await Promise.all(pending.map(global.Shots.save)); }
+      catch (err) { App.toast(err.message || "Couldn't save the screenshot"); }
       const t = Model.newTask({
+        shots,
         title: title.value.trim(),
         requesterId: Actions.ensurePerson(req.value),
         projectId: Actions.ensureProject(proj.value),
@@ -208,6 +230,12 @@
       </div>
 
       <div class="ed-section">
+        <div class="label">${App.icon("image")}Screenshots</div>
+        <div class="shots" data-shot-strip></div>
+        <div data-shot-drop></div>
+      </div>
+
+      <div class="ed-section">
         <div class="label">${App.icon("note")}Activity log</div>
         <form class="add-line" data-log-form><input class="input" name="newlog" placeholder="Add a note, e.g. “Emailed Sarah for the data”" autocomplete="off"><button class="btn sm" type="submit">Log</button></form>
         <div class="log mt-12" data-log></div>
@@ -312,6 +340,31 @@
     });
     q("[data-steps]").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.closest(".txt")) { e.preventDefault(); e.target.blur(); } });
 
+    // screenshots
+    const shotStrip = q("[data-shot-strip]");
+    let shotsKey = null;
+    const addShots = async files => {
+      try {
+        const refs = await Promise.all((await global.Shots.prepare(files)).map(global.Shots.save));
+        mutate(t => { t.shots = (t.shots || []).concat(refs); Actions.addLog(t, refs.length > 1 ? `Added ${refs.length} screenshots` : "Added a screenshot", true); });
+      } catch (err) { App.toast(err.message || "Couldn't add that image"); }
+    };
+    const removeShot = shotId => {
+      const before = JSON.parse(JSON.stringify(Store.tasks.get(id).shots || []));
+      mutate(t => { t.shots = (t.shots || []).filter(x => x.id !== shotId); });
+      App.toast("Screenshot removed", { label: "Undo", onClick: () => mutate(t => { t.shots = before; }) });
+      global.Shots.cleanupLater([shotId]);
+    };
+    global.Shots.dropZone(q("[data-shot-drop]"), addShots);
+    global.Shots.onPaste(body, addShots);
+    function paintShots(t) {
+      const list = t.shots || [];
+      const key = list.map(x => x.id).join(",");
+      if (key === shotsKey) return; // don't reload thumbnails on unrelated edits
+      shotsKey = key;
+      global.Shots.renderStrip(shotStrip, list, { onRemove: removeShot });
+    }
+
     // log
     q("[data-log-form]").addEventListener("submit", e => {
       e.preventDefault();
@@ -408,6 +461,7 @@
       body.querySelectorAll("[data-date]").forEach(b => b.classList.toggle("on", b.dataset.date === t.due));
       if (document.activeElement !== due) due.value = t.due || "";
       paintWaiting(t);
+      paintShots(t);
 
       const next = Model.nextStep(t);
       const stepsEl = q("[data-steps]");

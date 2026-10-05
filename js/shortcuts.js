@@ -9,7 +9,7 @@
   const LIST = [
     ["Anywhere", [
       [["N"], "New task"], [["Shift", "N"], "New self-assigned task"], [["M"], "Meeting mode (add several asks)"],
-      [["/"], "Search tasks"], [["?"], "Show this cheat sheet"], [["Esc"], "Close / cancel"]
+      [["/"], "Search tasks"], [["Ctrl", "V"], "Paste a screenshot → new task with it attached"], [["?"], "Show this cheat sheet"], [["Esc"], "Close / cancel"]
     ]],
     ["Go to", [
       [["1"], "Dashboard"], [["2"], "People"], [["3"], "Projects"], [["4"], "Done"], [["5"], "Weekly review"],

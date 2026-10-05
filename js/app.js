@@ -123,6 +123,28 @@
     doAction(b.dataset.action);
   });
   document.getElementById("fab").onclick = () => Editor.quickAdd();
+
+  // Snip → paste: pasting or dropping a screenshot anywhere starts a new task with it attached.
+  const appVisible = () => !document.getElementById("shell").hidden && !App.sheet.isOpen() && !App.dialogOpen();
+  document.addEventListener("paste", e => {
+    if (!appVisible() || (e.target.closest && e.target.closest("input, textarea, [contenteditable=true]"))) return;
+    const files = global.Shots.imageFiles(e.clipboardData);
+    if (!files.length) return;
+    e.preventDefault();
+    Editor.quickAdd({ files });
+  });
+  let dragDepth = 0;
+  document.addEventListener("dragenter", e => { if (appVisible() && global.Shots.hasImage(e.dataTransfer)) { dragDepth++; document.body.classList.add("drop-anywhere"); } });
+  document.addEventListener("dragleave", () => { if (dragDepth && --dragDepth === 0) document.body.classList.remove("drop-anywhere"); });
+  document.addEventListener("dragover", e => { if (document.body.classList.contains("drop-anywhere")) e.preventDefault(); });
+  document.addEventListener("drop", e => {
+    if (!document.body.classList.contains("drop-anywhere")) return;
+    dragDepth = 0; document.body.classList.remove("drop-anywhere");
+    const files = global.Shots.imageFiles(e.dataTransfer);
+    if (!files.length) return;
+    e.preventDefault();
+    Editor.quickAdd({ files });
+  });
   document.getElementById("sideNew").onclick = () => Editor.quickAdd();
 
   // Re-render on data changes (skip while the user is mid-drag on the board).
@@ -186,6 +208,7 @@
   async function importPreview() {
     const data = Store.localPreviewData();
     if (!data.tasks.length && !data.people.length && !data.projects.length) return;
+    for (const img of data.images) { try { await Store.putImage(img); } catch (e) { console.error(e); } }
     await Store.saveMany("people", data.people);
     await Store.saveMany("projects", data.projects);
     await Store.saveMany("tasks", data.tasks);
