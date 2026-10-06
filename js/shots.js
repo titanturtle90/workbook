@@ -189,6 +189,7 @@
       Store.tasks.forEach(t => (t.shots || []).forEach(s => used.add(s.id)));
       Store.projects.forEach(p => { if (p.photo) used.add(p.photo.id); });
       Store.trash.forEach(t => (t.shots || []).forEach(s => used.add(s.id))); // kept while in Recently deleted
+      Store.notes.forEach(n => (n.shots || []).forEach(s => used.add(s.id)));
       ids.filter(id => !used.has(id)).forEach(id => Store.removeImage(id));
     }, delay == null ? 10000 : delay);
   };

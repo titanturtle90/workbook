@@ -4,13 +4,14 @@
   const App = global.App, Model = global.Model, Store = global.Store, Views = global.Views, Editor = global.Editor;
   const esc = App.esc;
 
-  const VIEW_KEYS = ["tasks", "today", "people", "projects", "done", "review"];
+  const VIEW_KEYS = ["tasks", "today", "people", "projects", "meetings", "done", "review"];
   const NAV = [
     { key: "tasks", label: "Dashboard", icon: "table", kbd: "1" },
     { key: "people", label: "People", icon: "users", kbd: "2" },
     { key: "projects", label: "Projects", icon: "folder", kbd: "3" },
-    { key: "done", label: "Done", icon: "archive", kbd: "4" },
-    { key: "review", label: "Weekly review", icon: "review", kbd: "5" }
+    { key: "meetings", label: "Meetings", icon: "meeting", kbd: "4" },
+    { key: "done", label: "Done", icon: "archive", kbd: "5" },
+    { key: "review", label: "Weekly review", icon: "review", kbd: "6" }
   ];
 
   // ======================= Router =======================
@@ -75,12 +76,12 @@
     const projects = [...Store.projects.values()].filter(p => !p.archived)
       .map(p => ({ p, n: [...Store.tasks.values()].filter(t => t.projectId === p.id && Model.isActive(t)).length }))
       .filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 8);
-    side.innerHTML = NAV.map((n, i) => (i === 3 ? `<div class="side-sep"></div>` : "") +
+    side.innerHTML = NAV.map((n, i) => (i === 4 ? `<div class="side-sep"></div>` : "") +
       `<a class="side-item ${cur === n.key ? "active" : ""}" href="#${n.key}" title="${esc(n.label)} (${n.kbd})">${App.icon(n.icon)}<span class="side-text">${esc(n.label)}</span>${countFor(n.key)}<kbd>${n.kbd}</kbd></a>`).join("") +
       (projects.length ? `<div class="side-label"><span class="side-text">Active projects</span></div>` + projects.map(({ p, n }) => `<a class="side-item side-project ${cur === "projects" && Router.params.id === p.id ? "active" : ""}" href="#projects/${esc(p.id)}" title="${esc(p.name)}"><span class="swatch" style="background:${esc(p.color)}"></span><span class="side-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="count">${n}</span></a>`).join("") : "");
 
     const tabs = [NAV[0], NAV[1], NAV[2], NAV[3], { key: "more", label: "More", icon: "more" }];
-    const tabActive = cur === "review" ? "more" : cur;
+    const tabActive = cur === "review" || cur === "done" ? "more" : cur;
     document.getElementById("tabbar").innerHTML = tabs.map(n => {
       const badge = n.key === "tasks" && c.urgent ? `<span class="badge ${c.overdue ? "" : "soft"}">${c.urgent > 99 ? "99+" : c.urgent}</span>` : n.key === "more" && c.reviewDue ? `<span class="badge soft">1</span>` : "";
       return `<button class="tab ${tabActive === n.key ? "active" : ""}" type="button" data-tab="${n.key}"><span class="ico">${App.icon(n.icon)}${badge}</span>${esc(n.short || n.label)}</button>`;
@@ -97,7 +98,7 @@
     const c = counts();
     const body = App.el(`<div>
       <button type="button" class="mrow" data-go="review">${App.icon("review")}<div class="grow"><div>Weekly review ${c.reviewDue ? `<span class="pill orange" style="margin-left:6px">Due</span>` : ""}</div><div class="sub">Wins, slips, follow-ups, next week</div></div>${App.icon("right", "sm")}</button>
-      <button type="button" class="mrow" data-a="meeting">${App.icon("meeting")}<div class="grow"><div>Meeting mode</div><div class="sub">Capture several asks quickly</div></div>${App.icon("right", "sm")}</button>
+      <button type="button" class="mrow" data-go="done">${App.icon("archive")}<div class="grow"><div>Done</div><div class="sub">${c.doneWeek} finished this week</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="self">${App.icon("me")}<div class="grow"><div>New self-assigned task</div><div class="sub">Something you're asking of yourself</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="templates">${App.icon("template")}<div class="grow"><div>Task templates</div><div class="sub">${Store.templates.size ? App.plural(Store.templates.size, "template") : "Reusable checklists"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow"><div>Recently deleted</div><div class="sub">${Store.trash.size ? App.plural(Store.trash.size, "task") + " · kept 30 days" : "Empty"}</div></div>${App.icon("right", "sm")}</button>
@@ -113,7 +114,7 @@
     };
   }
   function doAction(a) {
-    if (a === "meeting") Editor.meeting();
+    if (a === "meeting") global.Meetings.newNote();
     else if (a === "self") Editor.quickAdd({ self: true });
     else if (a === "export") global.Exporter.open();
     else if (a === "shortcuts") global.Shortcuts.help();
@@ -130,7 +131,9 @@
 
   // Snip → paste: pasting or dropping a screenshot anywhere starts a new task with it attached.
   const appVisible = () => !document.getElementById("shell").hidden && !App.sheet.isOpen() && !App.dialogOpen();
+  const onMeetingNote = () => Router.view === "meetings" && Router.params.id && global.Meetings.addImages && !App.sheet.isOpen();
   document.addEventListener("paste", e => {
+    if (onMeetingNote()) { const f = global.Shots.imageFiles(e.clipboardData); if (f.length) { e.preventDefault(); global.Meetings.addImages(f); } return; }
     if (!appVisible() || (e.target.closest && e.target.closest("input, textarea, [contenteditable=true]"))) return;
     const files = global.Shots.imageFiles(e.clipboardData);
     if (!files.length) return;
@@ -147,7 +150,7 @@
     const files = global.Shots.imageFiles(e.dataTransfer);
     if (!files.length) return;
     e.preventDefault();
-    Editor.quickAdd({ files });
+    if (onMeetingNote()) global.Meetings.addImages(files); else Editor.quickAdd({ files });
   });
   document.getElementById("sideNew").onclick = () => Editor.quickAdd();
 
@@ -241,6 +244,7 @@
     await Store.saveMany("tasks", data.tasks);
     await Store.saveMany("templates", data.templates || []);
     await Store.saveMany("trash", data.trash || []);
+    await Store.saveMany("notes", data.notes || []);
     Store.clearLocalPreview();
     App.sheet.close();
     App.toast(`Imported ${App.plural(data.tasks.length, "task")} from preview`);

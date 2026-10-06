@@ -80,7 +80,7 @@
     try { images = await Store.allImages(); } catch (e) { App.toast("Screenshots couldn't be included (offline?)"); }
     const data = { app: "workbook", version: 2, exportedAt: new Date().toISOString(),
       tasks: [...Store.tasks.values()], people: [...Store.people.values()], projects: [...Store.projects.values()],
-      templates: [...Store.templates.values()], trash: [...Store.trash.values()], images };
+      templates: [...Store.templates.values()], trash: [...Store.trash.values()], notes: [...Store.notes.values()], images };
     App.download(`workbook-backup-${App.today()}.json`, JSON.stringify(data, null, 2), "application/json");
   };
 
@@ -99,6 +99,7 @@
       await Store.saveMany("people", data.people || []);
       await Store.saveMany("templates", data.templates || []);
       await Store.saveMany("trash", data.trash || []);
+      await Store.saveMany("notes", data.notes || []);
       await Store.saveMany("projects", data.projects || []);
       await Store.saveMany("tasks", data.tasks || []);
       App.toast("Backup restored");

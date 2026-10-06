@@ -135,6 +135,7 @@
       <div class="progress mt-12"><div style="width:${pct}%;background:${esc(p.color)}"></div></div>
       ${open.length ? groups.map(g => Comp.section({ title: g.label, count: g.tasks.length, body: `<div class="list">${g.tasks.map(t => Comp.taskCard(t, { hideProject: true })).join("")}</div>` })).join("") : `<div class="mt-16">${Comp.emptyInline("No open tasks in this project.")}</div>`}
       ${done.length ? Comp.section({ title: "Finished", count: done.length, body: `<div class="list">${done.map(t => Comp.taskCard(t, { hideProject: true, compact: true })).join("")}</div>` }) : ""}
+      ${(() => { const notes = global.Meetings ? global.Meetings.forProject(id).slice(0, 8) : []; return notes.length ? Comp.section({ title: "Meeting notes", count: notes.length, body: `<div class="mlist">${notes.map(global.Meetings.rowHtml).join("")}</div>` }) : ""; })()}
     `;
     Comp.bindTasks(panel);
     panel.querySelector("[data-edit]").onclick = () => Views.editProject(p);

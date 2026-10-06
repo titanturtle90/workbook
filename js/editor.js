@@ -222,54 +222,6 @@
     setTimeout(() => title.focus(), 80);
   };
 
-  // ================= MEETING MODE =================
-  Editor.meeting = function () {
-    const last = App.lsGet("wb:meeting", {});
-    const body = App.el(`<div>
-      <p class="muted" style="font-size:.86rem">Set the shared details once, then type each ask and press <kbd>Enter</kbd>. Each one is saved right away.</p>
-      <div class="form-grid mt-12">
-        <div class="field span-2"><label>Meeting</label><input class="input" name="meeting" placeholder="e.g. Monday staff meeting" value="${esc(last.meeting || "")}"></div>
-        <div class="field"><label>Who asked (default)</label><div class="ac"><input class="input" name="requester" placeholder="Name, or “Me”" value="${esc(last.requester || "")}"></div></div>
-        <div class="field"><label>Project (default)</label><div class="ac"><input class="input" name="project" placeholder="Optional" value="${esc(last.project || "")}"></div></div>
-        <div class="field span-2"><label>Due (default)</label>
-          <div class="row"><input class="input" type="date" name="due" style="max-width:200px"></div>
-          <div class="quick-dates">${quickDateChips("data-date")}</div>
-        </div>
-      </div>
-      <div class="field mt-16"><label>Ask</label>
-        <div class="search" style="height:48px"><span>${App.icon("plus")}</span><input name="ask" placeholder="Type an ask, press Enter" autocomplete="off"></div>
-      </div>
-      <div class="added-list" data-added></div>
-    </div>`);
-    App.sheet.open({ title: "Meeting mode", subtitle: "Capture several asks fast", body, narrow: true });
-    const q = n => body.querySelector(`[name=${n}]`);
-    Editor.bindPersonInput(q("requester"), true);
-    Editor.bindProjectInput(q("project"));
-    body.querySelectorAll("[data-date]").forEach(b => b.addEventListener("click", () => { q("due").value = b.dataset.date; body.querySelectorAll("[data-date]").forEach(x => x.classList.toggle("on", x === b)); q("ask").focus(); }));
-    const added = body.querySelector("[data-added]");
-    q("ask").addEventListener("keydown", e => {
-      if (e.key !== "Enter") return;
-      e.preventDefault();
-      const text = q("ask").value.trim();
-      if (!text) return;
-      const meeting = q("meeting").value.trim();
-      App.lsSet("wb:meeting", { meeting, requester: q("requester").value.trim(), project: q("project").value.trim() });
-      const reqId = Actions.ensurePerson(q("requester").value);
-      const t = Model.newTask({
-        title: text, requesterId: reqId, projectId: Actions.ensureProject(q("project").value), due: q("due").value || "",
-        source: reqId === Model.ME ? "self" : "meeting",
-        log: [Actions.logEntry(meeting ? `Captured in meeting: ${meeting}` : "Captured in a meeting", true)]
-      });
-      Store.save("tasks", t);
-      q("ask").value = "";
-      const row = App.el(`<div class="added-item">${App.icon("check", "sm")}<span class="grow">${esc(text)}</span><button type="button" class="btn xs ghost" data-open>Details</button><button type="button" class="icon-btn sm plain" data-undo title="Remove">${App.icon("x")}</button></div>`);
-      row.querySelector("[data-open]").addEventListener("click", () => Editor.open(t.id));
-      row.querySelector("[data-undo]").addEventListener("click", () => { Store.remove("tasks", t.id); row.remove(); });
-      added.prepend(row);
-    });
-    setTimeout(() => (q("meeting").value ? q("ask") : q("meeting")).focus(), 80);
-  };
-
   // ================= FULL EDITOR =================
   let current = null; // { id, flush }
 
@@ -610,6 +562,9 @@
         t.completedAt ? `${t.status === "cancelled" ? "Cancelled" : "Completed"} ${App.fmtIso(t.completedAt)}` : "",
         src ? `Came in via ${src.label}` : ""
       ].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join("");
+      const mtg = t.meetingId && Store.notes.get(t.meetingId);
+      if (mtg) q("[data-meta]").insertAdjacentHTML("afterbegin", `<span>${App.icon("meeting", "xs")} From meeting: <a href="#meetings/${encodeURIComponent(mtg.id)}" data-close-sheet>${esc((mtg.title || "").trim() || "Untitled meeting")}${mtg.date ? ` · ${esc(App.fmtDate(mtg.date))}` : ""}</a></span>`);
+      const cl = q("[data-close-sheet]"); if (cl) cl.onclick = () => App.sheet.close();
 
       foot.querySelector("[data-done]").innerHTML = Model.isActive(t) ? `${App.icon("check", "sm")}Mark done` : `${App.icon("undo", "sm")}Reopen`;
     }

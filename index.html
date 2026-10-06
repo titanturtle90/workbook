@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=19">
+<link rel="stylesheet" href="css/app.css?v=20">
 <script>
   // Apply the saved theme before first paint so there's no flash.
   try { var t = JSON.parse(localStorage.getItem("wb:theme")); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
@@ -102,7 +102,7 @@
     <button class="btn primary block side-new" id="sideNew" type="button" title="New task (N)"><svg class="ic"><use href="#i-plus"/></svg><span class="side-text">New task</span> <kbd>N</kbd></button>
     <nav class="side-nav" id="sideNav"></nav>
     <div class="side-foot">
-      <button class="side-link" type="button" data-action="meeting" title="Meeting mode (M)"><svg class="ic"><use href="#i-meeting"/></svg><span class="side-text">Meeting mode</span> <kbd>M</kbd></button>
+      <button class="side-link" type="button" data-action="meeting" title="New meeting note (M)"><svg class="ic"><use href="#i-meeting"/></svg><span class="side-text">New meeting note</span> <kbd>M</kbd></button>
       <button class="side-link" type="button" data-action="export" title="Export &amp; reports"><svg class="ic"><use href="#i-download"/></svg><span class="side-text">Export &amp; reports</span></button>
       <button class="side-link" type="button" data-action="shortcuts" title="Shortcuts (?)"><svg class="ic"><use href="#i-keyboard"/></svg><span class="side-text">Shortcuts</span> <kbd>?</kbd></button>
       <button class="side-link" type="button" data-action="settings" title="Settings"><svg class="ic"><use href="#i-settings"/></svg><span class="side-text">Settings</span></button>
@@ -120,7 +120,7 @@
       </div>
       <div class="actions">
         <button class="icon-btn" type="button" data-action="search" aria-label="Search"><svg class="ic"><use href="#i-search"/></svg></button>
-        <button class="icon-btn" type="button" data-action="meeting" aria-label="Meeting mode"><svg class="ic"><use href="#i-meeting"/></svg></button>
+        <button class="icon-btn" type="button" data-action="meeting" aria-label="New meeting note"><svg class="ic"><use href="#i-meeting"/></svg></button>
       </div>
     </header>
 
@@ -128,6 +128,7 @@
       <section class="panel" data-panel="tasks" id="panel-tasks"></section>
       <section class="panel" data-panel="people" id="panel-people" hidden></section>
       <section class="panel" data-panel="projects" id="panel-projects" hidden></section>
+      <section class="panel" data-panel="meetings" id="panel-meetings" hidden></section>
       <section class="panel" data-panel="done" id="panel-done" hidden></section>
       <section class="panel" data-panel="review" id="panel-review" hidden></section>
     </main>
@@ -161,23 +162,24 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=19"></script>
-<script src="js/core.js?v=19"></script>
-<script src="js/model.js?v=19"></script>
-<script src="js/store.js?v=19"></script>
-<script src="js/components.js?v=19"></script>
-<script src="js/shots.js?v=19"></script>
-<script src="js/bulk.js?v=19"></script>
-<script src="js/editor.js?v=19"></script>
-<script src="js/templates.js?v=19"></script>
-<script src="js/views/today.js?v=19"></script>
-<script src="js/views/tasks.js?v=19"></script>
-<script src="js/views/people.js?v=19"></script>
-<script src="js/views/projects.js?v=19"></script>
-<script src="js/views/done.js?v=19"></script>
-<script src="js/views/review.js?v=19"></script>
-<script src="js/export.js?v=19"></script>
-<script src="js/shortcuts.js?v=19"></script>
-<script src="js/app.js?v=19"></script>
+<script src="js/firebase-config.js?v=20"></script>
+<script src="js/core.js?v=20"></script>
+<script src="js/model.js?v=20"></script>
+<script src="js/store.js?v=20"></script>
+<script src="js/components.js?v=20"></script>
+<script src="js/shots.js?v=20"></script>
+<script src="js/bulk.js?v=20"></script>
+<script src="js/editor.js?v=20"></script>
+<script src="js/templates.js?v=20"></script>
+<script src="js/views/today.js?v=20"></script>
+<script src="js/views/tasks.js?v=20"></script>
+<script src="js/views/people.js?v=20"></script>
+<script src="js/views/projects.js?v=20"></script>
+<script src="js/views/meetings.js?v=20"></script>
+<script src="js/views/done.js?v=20"></script>
+<script src="js/views/review.js?v=20"></script>
+<script src="js/export.js?v=20"></script>
+<script src="js/shortcuts.js?v=20"></script>
+<script src="js/app.js?v=20"></script>
 </body>
 </html>

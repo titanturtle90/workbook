@@ -29,7 +29,7 @@ Every task has: the ask, requester (or **Me** for self-assigned), project, due d
 
 **Templates:** open a task and choose **Save as template**, or manage them in Settings → Task templates. Pick one at the top of the New task form to fill in the title, steps, person, project, priority, tags, estimate and repeat schedule.
 
-**Meeting mode** lets you set the meeting, default requester, project, and due date once, then type asks one after another.
+**Meetings:** press `M` (or **New meeting note**) for a note with title, date, organizer, attendees, project, free-form notes and photos/screenshots. Add **action items** as you go: yours become tasks, other people's become “Waiting On Someone” tasks with a follow-up. Ticking an action item marks its task done. Recurring meetings link to the previous one and can carry over open action items, and **Copy recap** gives you a summary to paste into an email. People and project pages list their meetings.
 
 ## Keyboard shortcuts
 
@@ -39,9 +39,9 @@ Press `?` in the app for the full list.
 | --- | --- | --- | --- |
 | `N` | New task | `J` / `K` | Next / previous task |
 | `Shift+N` | New self-assigned task | `Enter` | Open selected task |
-| `M` | Meeting mode | `X` | Mark done / reopen |
+| `M` | New meeting note | `X` | Mark done / reopen |
 | `/` | Search | `S` | Change status (then `1`–`8`) |
-| `1`–`5` | Dashboard, People, Projects, Done, Review | `P` | Cycle priority |
+| `1`–`6` | Dashboard, People, Projects, Meetings, Done, Review | `P` | Cycle priority |
 | `T` | Switch Today → Table → Board → Calendar | `D` | Change due date |
 | `[` | Collapse / expand the side menu |
 | `Esc` | Close | `F` | Finish the next step |
@@ -84,7 +84,7 @@ js/model.js              task shape, statuses, priority bumping, sort/group/filt
 js/store.js              Firestore (users/{uid}/…) or local preview storage
 js/components.js         task cards/pills + shared actions (complete, status, steps…)
 js/editor.js             quick add, meeting mode, full task editor
-js/views/*.js            Dashboard (Today/Table/Board), People, Projects, Done, Weekly review
+js/views/*.js            Dashboard (Today/Table/Board/Calendar), People, Projects, Meetings, Done, Weekly review
 js/export.js             CSV, monthly summary, backup/restore
 js/shortcuts.js          keyboard shortcuts
 js/app.js                sign-in, routing, navigation, settings
@@ -92,6 +92,6 @@ sw.js, manifest.json     offline + install
 firestore.rules          security rules to paste into Firebase
 ```
 
-Data lives in Firestore under `users/{uid}/tasks`, `users/{uid}/people`, `users/{uid}/projects`, `users/{uid}/images` (screenshots), `users/{uid}/templates`, `users/{uid}/trash` (Recently deleted), and `users/{uid}/meta/settings`.
+Data lives in Firestore under `users/{uid}/tasks`, `users/{uid}/people`, `users/{uid}/projects`, `users/{uid}/images` (screenshots), `users/{uid}/templates`, `users/{uid}/trash` (Recently deleted), `users/{uid}/notes` (meeting notes), and `users/{uid}/meta/settings`.
 
 When you change a JS/CSS file, bump the `?v=` number in `index.html` and `sw.js` (and `CACHE_NAME`) so installed copies pick up the update.

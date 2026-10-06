@@ -101,6 +101,7 @@
       ${Comp.section({ title: isMe ? "Open" : `Asked of you`, count: asked.length, right: hours ? `<span class="muted" style="font-size:.8rem">≈ ${Comp.fmtHours(hours)} estimated</span>` : "", body: asked.length ? `<div class="list">${asked.map(t => Comp.taskCard(t, { hideRequester: true })).join("")}</div>` : Comp.emptyInline("Nothing open.") })}
       ${isMe ? "" : Comp.section({ title: "You're waiting on them", tone: "orange", count: waiting.length, body: waiting.length ? `<div class="list">${waiting.map(t => Comp.taskCard(t)).join("")}</div>` : Comp.emptyInline("Not waiting on them for anything.") })}
       ${done.length ? Comp.section({ title: "Recently finished", count: done.length, body: `<div class="list">${done.map(t => Comp.taskCard(t, { hideRequester: true, compact: true })).join("")}</div>` }) : ""}
+      ${(() => { const notes = global.Meetings ? global.Meetings.forPerson(id).slice(0, 8) : []; return notes.length && !isMe ? Comp.section({ title: "Meetings", count: notes.length, body: `<div class="mlist">${notes.map(global.Meetings.rowHtml).join("")}</div>` }) : ""; })()}
     `;
     Comp.bindTasks(panel);
     const ed = panel.querySelector("[data-edit]"); if (ed) ed.onclick = () => Views.editPerson(p);
