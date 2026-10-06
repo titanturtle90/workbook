@@ -13,7 +13,7 @@
     ]],
     ["Go to", [
       [["1"], "Dashboard"], [["2"], "People"], [["3"], "Projects"], [["4"], "Meetings"], [["5"], "Done"], [["6"], "Weekly review"],
-      [["T"], "Switch Today → Table → Board → Calendar"], [["["], "Collapse / expand the side menu"]
+      [["T"], "Switch Today → Table → Calendar"], [["["], "Collapse / expand the side menu"]
     ]],
     ["Selected task", [
       [["J"], "Next task (or ↓)"], [["K"], "Previous task (or ↑)"], [["Enter"], "Open"], [["X"], "Mark done / reopen"],

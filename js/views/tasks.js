@@ -1,4 +1,4 @@
-/* Dashboard: Today (what needs you now), Table (sortable columns, grouping) and Board (drag between statuses). Table and Board share search + filters. */
+/* Dashboard: Today (what needs you now), Table (sortable columns, grouping) and Calendar (due dates by day). Table and Calendar share search + filters. */
 (function (global) {
   "use strict";
   const App = global.App, Model = global.Model, Store = global.Store, Comp = global.Comp, Actions = global.Actions;
@@ -10,6 +10,8 @@
   state.filters = Object.assign({}, DEFAULT.filters, state.filters || {});
   const dashStart = App.lsGet("wb:dashStart", "last"); // Settings → "Dashboard opens on"
   if (dashStart !== "last") state.mode = dashStart;
+  if (state.mode === "board") state.mode = "table"; // the Board view was removed
+  if (dashStart === "board") App.lsSet("wb:dashStart", "table");
   let query = "";
   let searchOpen = false; // phones: the search bar shows only when asked for (top-bar search icon or /)
   const persist = () => App.lsSet("wb:tasksView", { mode: state.mode, sort: state.sort, dir: state.dir, group: state.group, filters: state.filters });
@@ -91,7 +93,7 @@
         </div>
         <button type="button" class="btn block ghost mt-4" data-start-select>${App.icon("check", "sm")}Select several tasks to change at once</button>
         <div class="mf-sec"><div class="label">Show</div><div class="chips"><button type="button" class="chip ${f.self === true ? "on" : ""}" data-self>${App.icon("me", "xs")}Only self-assigned</button><button type="button" class="chip ${f.hideSnoozed ? "on" : ""}" data-hide-snoozed>${App.icon("moon", "xs")}Hide snoozed</button></div></div>
-        ${FILTER_KEYS.filter(([key]) => !(key === "statuses" && state.mode === "board")).map(([key, label]) => {
+        ${FILTER_KEYS.map(([key, label]) => {
           const opts = filterOptions(key);
           if (!opts.length) return "";
           return `<div class="mf-sec"><div class="label">${esc(label)}${opts.some(o => o.on) ? ` <button type="button" class="mf-clear" data-clear="${key}">Clear</button>` : ""}</div><div class="chips">${opts.map(o => chip(key, o)).join("")}</div></div>`;
@@ -164,53 +166,6 @@
     const head = `<tr><th class="c-check"></th>${COLS.map(c => `<th class="${c.cls} sortable ${state.sort === c.key ? "sorted" : ""}" data-sort="${c.key}">${c.label} ${state.sort === c.key ? App.icon(state.dir === "desc" ? "up" : "down") : ""}</th>`).join("")}<th></th></tr>`;
     const bodyRows = groups.map(g => (g.label ? `<tr class="group-row"><td colspan="${COLS.length + 2}">${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : g.dot ? `<span class="dot-sw" style="background:${g.dot};border-radius:50%;margin-right:6px"></span>` : ""}${esc(g.label)}<span class="count">${g.tasks.length}</span></td></tr>` : "") + g.tasks.map(rowHtml).join("")).join("");
     return `<div class="table-wrap mt-12"><table class="ttable"><thead>${head}</thead><tbody>${bodyRows}</tbody></table></div>`;
-  }
-
-  // ---------- board ----------
-  // Waiting and Blocked share a column; cards keep their own status pill, and a drop moves a card to "Waiting".
-  const BOARD_COLUMNS = [
-    { keys: ["new"], drop: "new", label: "New" },
-    { keys: ["not_started"], drop: "not_started", label: "Not Started" },
-    { keys: ["in_progress"], drop: "in_progress", label: "In Progress" },
-    { keys: ["waiting", "blocked"], drop: "waiting", label: "Waiting / Blocked" },
-    { keys: ["in_review"], drop: "in_review", label: "In Review" }
-  ];
-  function renderBoard(tasks) {
-    const smart = Model.comparator("smart");
-    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-    const recentDone = [...Store.tasks.values()].filter(t => t.status === "done" && (t.completedAt || "") >= weekAgo && Model.matches(t, Object.assign({ q: query }, state.filters, { statuses: [] })));
-    const cols = BOARD_COLUMNS.filter(c => !state.filters.statuses.length || c.keys.some(k => state.filters.statuses.includes(k))).map(c => {
-      const list = tasks.filter(t => c.keys.includes(t.status)).sort(smart);
-      return `<div class="bcol" data-status="${c.drop}" data-keys="${c.keys.join(" ")}">
-        <div class="bcol-head"><span class="dot-sw" style="background:${Model.statusDot(c.drop)}"></span>${esc(c.label)}<span class="count">${list.length}</span>
-          <button type="button" class="icon-btn sm plain" style="margin-left:auto" data-add-status="${c.drop}" title="Add task here">${App.icon("plus")}</button></div>
-        ${list.map(t => Comp.taskCard(t, { draggable: App.isDesktop(), compact: true })).join("")}
-      </div>`;
-    });
-    cols.push(`<div class="bcol" data-status="done">
-      <div class="bcol-head"><span class="dot-sw" style="background:var(--green)"></span>Done this week<span class="count">${recentDone.length}</span></div>
-      ${recentDone.sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || "")).slice(0, 15).map(t => Comp.taskCard(t, { compact: true })).join("")}
-      ${App.isDesktop() ? `<div class="drop-done">Drop a card here to mark it done</div>` : ""}
-    </div>`);
-    return `<div class="board mt-12">${cols.join("")}</div>`;
-  }
-  function bindBoard(panel) {
-    let dragId = null;
-    panel.querySelectorAll(".tcard[draggable=true]").forEach(card => {
-      card.addEventListener("dragstart", e => { dragId = card.dataset.taskId; card.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", dragId); } catch (err) { /* ignore */ } });
-      card.addEventListener("dragend", () => { card.classList.remove("dragging"); panel.querySelectorAll(".drop-hover").forEach(c => c.classList.remove("drop-hover")); });
-    });
-    panel.querySelectorAll(".bcol").forEach(col => {
-      col.addEventListener("dragover", e => { if (!dragId) return; e.preventDefault(); col.classList.add("drop-hover"); });
-      col.addEventListener("dragleave", e => { if (!col.contains(e.relatedTarget)) col.classList.remove("drop-hover"); });
-      col.addEventListener("drop", e => {
-        e.preventDefault(); col.classList.remove("drop-hover");
-        const t = Store.tasks.get(dragId); dragId = null;
-        const keys = (col.dataset.keys || col.dataset.status).split(" ");
-        if (t && !keys.includes(t.status)) Actions.setStatus(t, col.dataset.status);
-      });
-    });
-    panel.querySelectorAll("[data-add-status]").forEach(b => b.onclick = () => global.Editor.quickAdd({ status: b.dataset.addStatus }));
   }
 
   // ---------- calendar ----------
@@ -334,7 +289,6 @@
             <div class="seg view-seg" role="tablist" title="Switch view (T)">
               <button type="button" data-mode="today" class="${isToday ? "on" : ""}">${App.icon("sun", "sm")}<span>Today</span></button>
               <button type="button" data-mode="table" class="${state.mode === "table" ? "on" : ""}">${App.icon(App.isDesktop() ? "table" : "list", "sm")}<span>${App.isDesktop() ? "Table" : "List"}</span></button>
-              <button type="button" data-mode="board" class="${state.mode === "board" ? "on" : ""}">${App.icon("board", "sm")}<span>Board</span></button>
               <button type="button" data-mode="calendar" class="${state.mode === "calendar" ? "on" : ""}">${App.icon("calendar", "sm")}<span>Calendar</span></button>
             </div>
             ${mobile && !isToday ? `<button class="icon-btn filter-btn ${nActive ? "on" : ""}" type="button" data-mobile-filters aria-label="Sort and filter${nActive ? ` (${nActive} on)` : ""}">${App.icon("sliders", "sm")}${nActive ? `<span class="badge">${nActive}</span>` : ""}</button>` : ""}
@@ -378,7 +332,7 @@
         </div>`;
 
       panel.innerHTML = head + controls + `
-        ${state.mode === "calendar" ? renderCalendar(tasks) : tasks.length || state.mode === "board" ? (state.mode === "board" ? renderBoard(tasks) : renderTable(tasks)) :
+        ${state.mode === "calendar" ? renderCalendar(tasks) : tasks.length ? renderTable(tasks) :
           `<div class="empty"><div class="big">${anyFilter ? "🔍" : "🗂️"}</div><h3>${anyFilter ? "No matching tasks" : "No open tasks"}</h3><p>${anyFilter ? "Try clearing a filter." : "Press N to add one."}</p></div>`}
       `;
       Comp.bindTasks(panel);
@@ -405,18 +359,17 @@
         if (state.sort === th.dataset.sort) state.dir = state.dir === "asc" ? "desc" : "asc"; else { state.sort = th.dataset.sort; state.dir = "asc"; }
         persist(); rerender();
       });
-      if (state.mode === "board") bindBoard(panel);
       if (state.mode === "calendar") bindCalendar(panel, rerender);
     },
     focusSearch(panel) {
       searchOpen = true;
-      if (state.mode === "today") state.mode = "table"; // search lives in Table/Board
+      if (state.mode === "today") state.mode = "table"; // search lives in Table/Calendar
       persist(); Views.tasks.render(panel);
       const s = panel.querySelector("#taskSearch"); if (s) { s.focus(); s.select(); }
     },
-    /** Switch to a mode, or cycle Today → Table → Board. */
+    /** Switch to a mode, or cycle Today → Table → Calendar. */
     setMode(panel, mode) {
-      const order = ["today", "table", "board", "calendar"];
+      const order = ["today", "table", "calendar"];
       state.mode = mode || order[(order.indexOf(state.mode) + 1) % order.length];
       persist(); Views.tasks.render(panel);
     }

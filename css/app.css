@@ -1,6 +1,6 @@
 /* ==========================================================================
    Workbook — design system
-   Adaptive: card-based on phones, sidebar + dense table/board on desktop.
+   Adaptive: card-based on phones, sidebar + dense table and calendar on desktop.
    Light + dark (follows the device, or forced via [data-theme]).
    ========================================================================== */
 
@@ -430,20 +430,6 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .ttable .group-row .count { color: var(--text-3); font-weight: 600; margin-left: 6px; }
 .table-wrap { overflow-x: auto; border-radius: var(--radius); }
 
-/* ---------- board ---------- */
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 12px; margin: 18px -16px 0; padding-left: 16px; padding-right: 16px; scroll-snap-type: x mandatory; }
-@media (min-width: 900px) { .board { margin: 18px 0 0; padding-left: 0; padding-right: 0; grid-auto-columns: minmax(230px, 1fr); scroll-snap-type: none; } }
-.bcol { background: var(--surface-2); border-radius: var(--radius); padding: 10px; min-height: 200px; display: flex; flex-direction: column; gap: 8px; scroll-snap-align: start; border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
-.bcol.drop-hover { border-color: var(--focus); background: color-mix(in srgb, var(--blue-soft) 70%, var(--surface-2)); }
-.bcol-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 4px; font-weight: 700; font-size: 0.85rem; }
-.bcol-head .count { color: var(--text-3); font-weight: 600; font-size: 0.8rem; }
-.bcol-head .dot-sw { width: 10px; height: 10px; border-radius: 50%; }
-.bcol .tcard { box-shadow: none; padding: 10px 10px 10px 10px; }
-.bcol .tcard .title { font-size: 0.88rem; }
-.bcol .tcard .next { font-size: 0.8rem; }
-.bcol .tcard[draggable="true"] { cursor: grab; }
-.bcol .tcard.dragging { opacity: 0.4; }
-.bcol .drop-done { margin-top: auto; border: 2px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 14px; text-align: center; font-size: 0.8rem; color: var(--text-3); }
 
 /* ---------- people & projects ---------- */
 .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; align-items: start; }

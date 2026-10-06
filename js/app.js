@@ -170,8 +170,8 @@
   sideToggle.onclick = App.toggleSidebar;
   applySidebar(!!App.lsGet("wb:sideCollapsed", false));
 
-  // Re-render on data changes (skip while the user is mid-drag on the board).
-  App.on("data", () => { if (document.querySelector(".tcard.dragging")) return; renderCurrent(); renderNav(); });
+  // Re-render on data changes.
+  App.on("data", () => { renderCurrent(); renderNav(); });
   App.on("data-ready", () => { Router.render(); offerPreviewImport(); global.Actions.purgeExpired(); });
   // Refresh relative dates when the day rolls over or the app comes back to the foreground.
   let lastDay = App.today();
@@ -202,7 +202,7 @@
         <span class="muted" style="font-size:.78rem">Urgent is set automatically when something is due within a day.</span>
       </div>
       <div class="field mt-16"><label>Dashboard opens on</label>
-        <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["board", "Board"], ["calendar", "Calendar"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${App.lsGet("wb:dashStart", "last") === v ? "on" : ""}">${l}</button>`).join("")}</div>
+        <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["calendar", "Calendar"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${(App.lsGet("wb:dashStart", "last") === "board" ? "table" : App.lsGet("wb:dashStart", "last")) === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
       <div class="field mt-16"><label>Weekly capacity (hours of task work)</label>
         <input class="input" type="number" min="1" max="80" step="1" data-capacity value="${esc(Store.setting("weeklyCapacity", 30))}" style="max-width:140px">

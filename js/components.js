@@ -425,7 +425,7 @@
     };
     root.addEventListener("touchstart", e => {
       const card = e.target.closest(".tcard");
-      if (!card || !root.contains(card) || card.closest(".board") || e.touches.length > 1) return;
+      if (!card || !root.contains(card) || e.touches.length > 1) return;
       if ((global.Bulk && global.Bulk.active) || !Model.isActive(Store.tasks.get(card.dataset.taskId) || {})) return;
       s = { card, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, mode: null, bg: null };
     }, { passive: true });
