@@ -997,3 +997,22 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .note-foot { display: flex; align-items: center; gap: 8px; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--border); }
 .note-foot .foot-icon { width: 42px; padding: 0; }
 .note-saved { font-size: 0.78rem; }
+
+/* ---------- task line alignment: title text centered with its checkbox and the row ---------- */
+/* Table rows: 22px content line, 13px above and below = the same 48px row, with everything centered in it */
+.ttable td { padding: 12.5px 10px 12.5px; }
+.ttable .c-check { padding-right: 0; }
+.ttable .c-check .check, .ttable .c-check .check:hover { margin-top: 0; }
+.ttable .c-title .t { line-height: 22px; }
+.ttable .c-title .tags { margin-top: 2px; }
+.ttable .c-title .tags:empty { display: none; }
+.ttable .c-next .n span { line-height: 22px; }
+.ttable .c-next .mini-check { margin-top: 3px; }
+.ttable .c-more .icon-btn, .ttable td:last-child .icon-btn { margin: -4px 0; } /* 30px button shouldn't stretch the row */
+/* Cards: first line of the title centered on the 22px checkbox */
+.tcard > .check { margin-top: 0; }
+.tcard .title { padding: 1px 0; }
+.ttable td { line-height: 22px; }
+.ttable td .pill, .ttable td .who, .ttable td .check, .ttable td .icon-btn, .ttable td .avatar { vertical-align: middle; }
+/* bold titles sit optically ~1px high in their line box; nudge without changing layout */
+.ttable .c-title .t, .tcard .title { position: relative; top: 1px; }
