@@ -11,6 +11,7 @@
   const dashStart = App.lsGet("wb:dashStart", "last"); // Settings → "Dashboard opens on"
   if (dashStart !== "last") state.mode = dashStart;
   if (state.mode === "board") state.mode = "table"; // the Board view was removed
+  if (!Model.AUTO_RAISE_PRIORITY) state.filters.priorities = (state.filters.priorities || []).filter(k => k !== "urgent"); // Urgent only existed as an automatic level
   if (dashStart === "board") App.lsSet("wb:dashStart", "table");
   let query = "";
   let searchOpen = false; // phones: the search bar shows only when asked for (top-bar search icon or /)
@@ -51,7 +52,7 @@
         .map(id => ({ value: id, label: id ? Model.projectName(id) || "Unknown" : "No project", swatch: id ? Model.project(id)?.color || "#999" : "", count: counts.get(id), on: f.projects.includes(id) }));
     }
     if (key === "statuses") return Model.ACTIVE_STATUSES.map(st => ({ value: st.key, label: st.label, dot: Model.statusDot(st.key), on: f.statuses.includes(st.key) }));
-    if (key === "priorities") return [{ key: "urgent", label: "Urgent" }].concat(Model.PRIORITIES).map(p => ({ value: p.key, label: p.label, dot: Model.priorityDot(p.key), on: f.priorities.includes(p.key) }));
+    if (key === "priorities") return (Model.AUTO_RAISE_PRIORITY ? [{ key: "urgent", label: "Urgent" }] : []).concat(Model.PRIORITIES).map(p => ({ value: p.key, label: p.label, dot: Model.priorityDot(p.key), on: f.priorities.includes(p.key) }));
     if (key === "due") return DUE_CHOICES.map(([v, l]) => ({ value: v, label: l, on: f.due === v }));
     if (key === "tags") return Model.allTags().map(tag => ({ value: tag, label: "#" + tag, on: f.tags.includes(tag) }));
     return [];

@@ -198,8 +198,8 @@
       </div>
       <div class="field mt-16"><label>Color key</label>
         <div class="color-key"><span class="muted" style="font-size:.78rem;width:64px">Status</span>${Model.ACTIVE_STATUSES.concat(Model.status("done")).map(st => `<span class="pill ${st.color}">${App.esc(st.short || st.label)}</span>`).join("")}</div>
-        <div class="color-key"><span class="muted" style="font-size:.78rem;width:64px">Priority</span>${[{ key: "urgent", label: "Urgent", color: "pr-urgent" }].concat(Model.PRIORITIES).map(p => `<span class="pill ${p.color}">${App.icon(p.key === "urgent" ? "bolt" : "flag")}${p.label}</span>`).join("")}</div>
-        <span class="muted" style="font-size:.78rem">Urgent is set automatically when something is due within a day.</span>
+        <div class="color-key"><span class="muted" style="font-size:.78rem;width:64px">Priority</span>${(Model.AUTO_RAISE_PRIORITY ? [{ key: "urgent", label: "Urgent", color: "pr-urgent" }] : []).concat(Model.PRIORITIES).map(p => `<span class="pill ${p.color}">${App.icon(p.key === "urgent" ? "bolt" : "flag")}${p.label}</span>`).join("")}</div>
+        <span class="muted" style="font-size:.78rem">Priority is exactly what you set. It isn't changed by due dates.</span>
       </div>
       <div class="field mt-16"><label>Dashboard opens on</label>
         <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["calendar", "Calendar"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${(App.lsGet("wb:dashStart", "last") === "board" ? "table" : App.lsGet("wb:dashStart", "last")) === v ? "on" : ""}">${l}</button>`).join("")}</div>

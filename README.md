@@ -15,7 +15,7 @@ No build step: plain HTML/CSS/JS served statically (GitHub Pages), with Firebase
 | **Weekly review** | A guided Friday pass: wins, slipped tasks, follow-ups, tasks missing a next step, stale tasks, and next week's load vs. your capacity. |
 | **Export** | CSV for Excel (open or all tasks), a "what I did this month" summary, and JSON backup/restore. |
 
-Every task has: the ask, requester (or **Me** for self-assigned), project, due date, status (New, Not Started, In Progress, Waiting On Someone, In Review, Blocked, Done, Cancelled), priority (High/Medium/Low, raised automatically as the due date approaches), an ordered **next steps** checklist, a dated **activity log**, who you're **waiting on** with a follow-up date, links, a time estimate, tags, and an optional **repeat** schedule (a new copy is created when you finish it).
+Every task has: the ask, requester (or **Me** for self-assigned), project, due date, status (New, Not Started, In Progress, Waiting On Someone, In Review, Blocked, Done, Cancelled), priority (High/Medium/Low, exactly as you set it), an ordered **next steps** checklist, a dated **activity log**, who you're **waiting on** with a follow-up date, links, a time estimate, tags, and an optional **repeat** schedule (a new copy is created when you finish it).
 
 **Screenshots:** snip the original request (e.g. `Win+Shift+S` on Windows, `Cmd+Shift+4` on Mac) and paste it with `Ctrl+V`/`Cmd+V`. Paste anywhere in Workbook to start a new task with the snip attached, or paste/drop/choose an image under **Next step** in a task. On a phone, pick from your photos or take a photo. Screenshots are shrunk to fit in Firestore (`users/{uid}/images`) and load only when you open a task; click one to see it full size.
 

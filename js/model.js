@@ -104,11 +104,14 @@
     return b === "overdue" ? "red" : b === "today" ? "orange" : b === "tomorrow" ? "yellow" : "gray";
   };
 
-  // ---------- priority: manual level, bumped up as the due date nears ----------
+  // ---------- priority ----------
+  // Priority is exactly what you set. Set AUTO_RAISE_PRIORITY to true to bring back the old behavior,
+  // where a task is shown as more important as its due date nears:
   // urgent(4) when overdue / due today / tomorrow; at least high(3) within 3 days; at least medium(2) within 7.
+  Model.AUTO_RAISE_PRIORITY = false;
   Model.effRank = t => {
     const base = Model.priority(t.priority).rank;
-    if (!t.due || !Model.isActive(t)) return base;
+    if (!Model.AUTO_RAISE_PRIORITY || !t.due || !Model.isActive(t)) return base;
     const n = App.daysUntil(t.due);
     let bump = 0;
     if (n <= 1) bump = 4; else if (n <= 3) bump = 3; else if (n <= 7) bump = 2;
