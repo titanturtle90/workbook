@@ -713,10 +713,11 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .mf .chip .cnt { font-weight: 600; opacity: 0.6; font-size: 0.76rem; }
 .mf .chip .swatch { width: 10px; height: 10px; border-radius: 3px; }
 @media (max-width: 899px) {
-  /* Sort & filter lives in the top-right corner, level with the page title */
-  #panel-tasks .page-head { position: relative; }
-  #panel-tasks .filter-btn { position: absolute; top: 18px; right: 0; width: 44px; height: 44px; border-radius: 12px; }
-  #panel-tasks .page-head > div:first-child { padding-right: 56px; }
+  /* Sort & filter sits in its own top-right grid cell beside the title, so it can never land on another element */
+  #panel-tasks .page-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  #panel-tasks .page-head > div:first-child { min-width: 0; }
+  #panel-tasks .page-head > .filter-btn { grid-column: 2; grid-row: 1; width: 44px; height: 44px; border-radius: 12px; }
+  #panel-tasks .page-head > .head-actions { grid-column: 1 / -1; grid-row: 2; }
   /* one clear button in the search bar (ours also closes it) */
   #taskSearch::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
 }
@@ -1016,3 +1017,18 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .ttable td .pill, .ttable td .who, .ttable td .check, .ttable td .icon-btn, .ttable td .avatar { vertical-align: middle; }
 /* bold titles sit optically ~1px high in their line box; nudge without changing layout */
 .ttable .c-title .t, .tcard .title { position: relative; top: 1px; }
+
+/* ---------- pull to refresh ---------- */
+html { overscroll-behavior-y: contain; } /* the browser's own pull-to-refresh would double up with ours */
+.ptr {
+  position: fixed; left: 50%; top: 0; z-index: 45; width: 40px; height: 40px; margin-left: -20px;
+  border-radius: 50%; background: var(--surface); color: var(--text-3); border: 1px solid var(--border-strong); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0;
+  transform: translateY(var(--ptr-y, -60px));
+}
+.ptr .ic { width: 20px; height: 20px; transform: rotate(var(--ptr-rot, 0deg)); }
+.ptr.snap { transition: transform 0.22s var(--ease), opacity 0.22s; }
+.ptr.armed { color: var(--accent); border-color: var(--accent); }
+.ptr.spin .ic { animation: ptr-spin 0.8s linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ptr.spin .ic { animation-duration: 2s; } }

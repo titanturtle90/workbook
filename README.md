@@ -29,6 +29,8 @@ Every task has: the ask, requester (or **Me** for self-assigned), project, due d
 
 **Templates:** open a task and choose **Save as template**, or manage them in Settings → Task templates. Pick one at the top of the New task form to fill in the title, steps, person, project, priority, tags, estimate and repeat schedule.
 
+**Pull to refresh (phones):** drag the page down from the very top and let go to reload Workbook with the latest version and fresh data. It doesn't trigger while you're scrolled down, typing, or have a panel open.
+
 **Meetings:** press `M` (or **New meeting note**) for a note with title, date, organizer, attendees, project, free-form notes and photos/screenshots. Add **action items** as you go: yours become tasks, other people's become “Waiting On Someone” tasks with a follow-up. Ticking an action item marks its task done. Recurring meetings link to the previous one and can carry over open action items, and **Copy recap** gives you a summary to paste into an email. People and project pages list their meetings.
 
 ## Keyboard shortcuts
@@ -87,6 +89,7 @@ js/editor.js             quick add, meeting mode, full task editor
 js/views/*.js            Dashboard (Today/Table/Calendar), People, Projects, Meetings, Done, Weekly review
 js/export.js             CSV, monthly summary, backup/restore
 js/shortcuts.js          keyboard shortcuts
+js/pull.js               pull to refresh (phones)
 js/app.js                sign-in, routing, navigation, settings
 sw.js, manifest.json     offline + install
 firestore.rules          security rules to paste into Firebase

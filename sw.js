@@ -1,10 +1,10 @@
-const CACHE_NAME = "workbook-v24";
-const V = "?v=24";
+const CACHE_NAME = "workbook-v25";
+const V = "?v=25";
 const PRECACHE_URLS = [
   "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
   "./css/app.css" + V,
   ...["firebase-config", "core", "model", "store", "components", "shots", "bulk", "editor", "templates", "views/today", "views/tasks", "views/people",
-      "views/projects", "views/meetings", "views/done", "views/review", "export", "shortcuts", "app"].map(f => `./js/${f}.js${V}`)
+      "views/projects", "views/meetings", "views/done", "views/review", "export", "shortcuts", "pull", "app"].map(f => `./js/${f}.js${V}`)
 ];
 
 self.addEventListener("install", event => {

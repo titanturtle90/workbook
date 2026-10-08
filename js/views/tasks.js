@@ -284,6 +284,7 @@
       const head = `
         <div class="page-head">
           <div><h1>Dashboard</h1><p class="lede">${isToday ? `${esc(Views.today.greeting())} · ${App.plural(activeCount, "open task")}` : `${App.plural(tasks.length, "open task")}${anyFilter ? " match" : ""}`}</p></div>
+          ${mobile && !isToday ? `<button class="icon-btn filter-btn ${nActive ? "on" : ""}" type="button" data-mobile-filters aria-label="Sort and filter${nActive ? ` (${nActive} on)` : ""}">${App.icon("sliders", "sm")}${nActive ? `<span class="badge">${nActive}</span>` : ""}</button>` : ""}
           <div class="head-actions">
             ${mobile ? "" : `<button class="btn sm ghost" type="button" data-select title="Select several tasks to change at once (V)">${App.icon("check", "sm")}Select</button>`}
             <button class="btn sm ghost" type="button" data-new-self title="New self-assigned task (Shift+N)" aria-label="New self-assigned task">${App.icon("me", "sm")}<span class="wide-label">Self-assigned</span></button>
@@ -292,7 +293,6 @@
               <button type="button" data-mode="table" class="${state.mode === "table" ? "on" : ""}">${App.icon(App.isDesktop() ? "table" : "list", "sm")}<span>${App.isDesktop() ? "Table" : "List"}</span></button>
               <button type="button" data-mode="calendar" class="${state.mode === "calendar" ? "on" : ""}">${App.icon("calendar", "sm")}<span>Calendar</span></button>
             </div>
-            ${mobile && !isToday ? `<button class="icon-btn filter-btn ${nActive ? "on" : ""}" type="button" data-mobile-filters aria-label="Sort and filter${nActive ? ` (${nActive} on)` : ""}">${App.icon("sliders", "sm")}${nActive ? `<span class="badge">${nActive}</span>` : ""}</button>` : ""}
             <button class="btn sm primary" type="button" data-new>${App.icon("plus", "sm")}New</button>
           </div>
         </div>`;
