@@ -36,11 +36,35 @@
   Editor.bindProjectInput = (input, onPick) => App.autocomplete(input, { source: projectSource(), onPick: it => { input.value = it.value; if (onPick) onPick(it.value); } });
   const sourceOptions = sel => `<option value="">—</option>` + Model.SOURCES.map(s => `<option value="${s.key}" ${sel === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("");
   const snoozeChips = attr => global.Actions.snoozeChoices().map(c => `<button type="button" class="chip" ${attr}="${c.value}">${esc(c.label)}</button>`).join("");
-  const startField = value => `<div class="field span-2"><label>Not until <span class="muted">(optional · hides it from Today until then)</span></label>
-          <div class="row"><input class="input" type="date" name="startDate" value="${esc(value || "")}" style="max-width:200px"><button type="button" class="btn sm ghost" data-clear-start>Clear</button></div>
-          <div class="quick-dates">${snoozeChips("data-start")}</div>
-        </div>`;
   const quickDateChips = (attr) => Comp.quickDates().filter(d => d.value).map(d => `<button type="button" class="chip" ${attr}="${d.value}">${esc(d.label)}</button>`).join("");
+  /** A checkbox that shows its fields only when ticked. */
+  const toggleField = (key, label, hint, on, inner) => `<div class="field span-2 tg" data-tg-wrap="${key}">
+          <label class="check-row"><input type="checkbox" data-tg="${key}" ${on ? "checked" : ""}><span><b>${label}</b> <span class="muted">${hint}</span></span></label>
+          <div class="tg-box" ${on ? "" : "hidden"}>${inner}</div>
+        </div>`;
+  const dueInner = value => `<div class="row"><input class="input" type="date" name="due" value="${esc(value || "")}" style="max-width:200px"></div>
+          <div class="quick-dates">${quickDateChips("data-date")}</div>`;
+  const startInner = value => `<div class="row"><input class="input" type="date" name="startDate" value="${esc(value || "")}" style="max-width:200px"></div>
+          <div class="quick-dates">${snoozeChips("data-start")}</div>`;
+  const categoryChips = sel => `<div class="chips cat-chips" data-cat>${Model.CATEGORIES.map(c => `<button type="button" class="chip ${sel === c.key ? "on" : ""}" data-v="${c.key}">${esc(c.label)}</button>`).join("")}</div>`;
+  /** File paths come first (most asks point at a file on the network drive); anything starting with http(s) is a link. */
+  const linkInner = `<div class="row wrap lf-add"><input class="input grow" name="lfValue" placeholder="File path, e.g. \\\\server\\Projects\\RFI-012.pdf (or paste a link)" autocomplete="off" spellcheck="false">
+          <input class="input" name="lfLabel" placeholder="Label (optional)" style="max-width:170px" autocomplete="off"><button class="btn sm" type="button" data-lf-add>Add</button></div>`;
+  Editor.parseLinkOrFile = (value, label) => {
+    const v = String(value || "").trim();
+    if (!v) return null;
+    if (/^(https?:\/\/|www\.|mailto:)/i.test(v)) { const url = App.safeUrl(/^www\./i.test(v) ? "https://" + v : v); return url ? { id: App.genId(), url, label: label || "" } : null; }
+    return { id: App.genId(), path: v.replace(/^file:\/{2,3}/i, "").replace(/^"(.*)"$/, "$1"), label: label || "" };
+  };
+  Editor.linkRowHtml = l => l.path
+    ? `<div class="link-row file">${App.icon("folder", "sm")}<span class="path" title="${esc(l.path)}">${l.label ? `<b>${esc(l.label)}</b>` : ""}<code>${esc(l.path)}</code></span><button type="button" class="btn xs ghost" data-copy-path="${esc(l.path)}">${App.icon("copy", "xs")}Copy</button><button type="button" class="icon-btn sm plain" data-del-link="${esc(l.id)}" title="Remove">${App.icon("x")}</button></div>`
+    : `<div class="link-row">${App.icon("link", "sm")}<a href="${esc(App.safeUrl(l.url))}" target="_blank" rel="noopener noreferrer">${esc(l.label || l.url)}</a><button type="button" class="icon-btn sm plain" data-del-link="${esc(l.id)}" title="Remove">${App.icon("x")}</button></div>`;
+  /** Wires a toggleField: ticking shows the fields; unticking hides them and calls onOff (to clear the value). */
+  function bindToggle(root, key, onOn, onOff) {
+    const cb = root.querySelector(`[data-tg="${key}"]`), box = root.querySelector(`[data-tg-wrap="${key}"] .tg-box`);
+    cb.addEventListener("change", () => { box.hidden = !cb.checked; if (cb.checked) { if (onOn) onOn(); } else if (onOff) onOff(); });
+    return { cb, box, set(on) { cb.checked = on; box.hidden = !on; } };
+  }
 
   // ---------- follow-up fields (quick add) ----------
   const FU_CHOICES = [["1", "Tomorrow"], ["2", "2 days"], ["3", "3 days"], ["7", "1 week"], ["14", "2 weeks"]];
@@ -80,24 +104,23 @@
     const tpls = global.Templates ? global.Templates.list() : [];
     const body = App.el(`<form class="qa" autocomplete="off">
       ${tpls.length ? `<div class="tpl-row"><span class="label">Start from a template</span><div class="chips scroll">${tpls.slice(0, 8).map(t => `<button type="button" class="chip" data-tpl="${esc(t.id)}">${App.icon("template", "xs")}${esc(t.name)}</button>`).join("")}</div></div>` : ""}
-      <div class="field"><input class="input title-input" name="title" placeholder="What's the ask?" required></div>
+      <div class="field"><label>Project</label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(projName)}"></div></div>
+      <div class="field mt-12"><label>Task</label><input class="input title-input" name="title" placeholder="What's the ask?" required></div>
+      <div class="field mt-12"><label>Category</label>${categoryChips(defaults.category || "")}</div>
       <div class="form-grid mt-12">
         <div class="field"><label>Who asked</label>
           <div class="ac"><input class="input" name="requester" placeholder="Name, or “Me”" value="${esc(reqName)}"></div>
           <div class="chips mt-4"><button type="button" class="chip ${self ? "on" : ""}" data-self>${App.icon("me", "sm")}I assigned this to myself</button></div>
         </div>
-        <div class="field"><label>Project</label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(projName)}"></div></div>
-        <div class="field span-2"><label>Due</label>
-          <div class="row"><input class="input" type="date" name="due" value="${esc(defaults.due || "")}" style="max-width:200px"></div>
-          <div class="quick-dates">${quickDateChips("data-date")}</div>
-        </div>
-        ${startField(defaults.startDate)}
         <div class="field"><label>Status</label><select class="select" name="status" data-st>${Model.ACTIVE_STATUSES.map(st => `<option value="${st.key}" ${(defaults.status || "new") === st.key ? "selected" : ""}>${esc(st.label)}</option>`).join("")}</select></div>
         <div class="field"><label>Priority</label>
           <div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${p.key === "medium" ? "on" : ""}">${p.label}</button>`).join("")}</div>
         </div>
         <div class="field"><label>How it came in</label><select class="select" name="source">${sourceOptions(self ? "self" : "")}</select></div>
         <div class="field span-2"><label>Next step <span class="muted">(optional)</span></label><input class="input" name="step" placeholder="e.g. Pull last quarter's numbers"><div class="muted tpl-steps" data-tpl-steps hidden></div></div>
+        ${toggleField("due", "Due date", "", !!defaults.due, dueInner(defaults.due))}
+        ${toggleField("start", "Not until", "Hide it from Today until a date", !!defaults.startDate, startInner(defaults.startDate))}
+        ${toggleField("lf", "File or link", "A file path on the network drive, or a link", false, `<div class="links" data-links></div>${linkInner}`)}
         <div class="field span-2"><label>Screenshot of the request <span class="muted">(optional)</span></label>
           <div class="shots" data-shot-strip></div><div data-shot-drop></div>
         </div>
@@ -126,6 +149,31 @@
     const markDate = () => f.querySelectorAll("[data-date]").forEach(b => b.classList.toggle("on", b.dataset.date === due.value));
     due.addEventListener("change", markDate); markDate();
     f.querySelectorAll("[data-prio] button").forEach(b => b.addEventListener("click", () => { prio = b.dataset.v; f.querySelectorAll("[data-prio] button").forEach(x => x.classList.toggle("on", x === b)); }));
+    let category = defaults.category || "";
+    f.querySelector("[data-cat]").addEventListener("click", e => {
+      const b = e.target.closest("[data-v]"); if (!b) return;
+      category = category === b.dataset.v ? "" : b.dataset.v;
+      f.querySelectorAll("[data-cat] [data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === category));
+    });
+    // due date / not until: ticking shows the date; unticking clears it
+    bindToggle(f, "due", () => setTimeout(() => due.focus(), 30), () => { due.value = ""; markDate(); });
+    bindToggle(f, "start", () => setTimeout(() => startIn.focus(), 30), () => { startIn.value = ""; markStart(); });
+    // files & links
+    const lfList = [];
+    const lfValue = f.querySelector("[name=lfValue]"), lfLabel = f.querySelector("[name=lfLabel]");
+    const paintLf = () => { f.querySelector("[data-links]").innerHTML = lfList.map(Editor.linkRowHtml).join(""); };
+    const addLf = () => {
+      const item = Editor.parseLinkOrFile(lfValue.value, lfLabel.value.trim());
+      if (!item) { if (lfValue.value.trim()) App.toast("That doesn't look like a link"); return false; }
+      lfList.push(item); lfValue.value = ""; lfLabel.value = ""; paintLf(); return true;
+    };
+    bindToggle(f, "lf", () => setTimeout(() => lfValue.focus(), 30), () => { lfList.length = 0; lfValue.value = ""; paintLf(); });
+    f.querySelector("[data-lf-add]").addEventListener("click", () => { addLf(); lfValue.focus(); });
+    [lfValue, lfLabel].forEach(inp => inp.addEventListener("keydown", e => { if (e.key === "Enter" && !(e.metaKey || e.ctrlKey)) { e.preventDefault(); e.stopPropagation(); addLf(); lfValue.focus(); } }));
+    f.querySelector("[data-links]").addEventListener("click", e => {
+      const c = e.target.closest("[data-copy-path]"); if (c) { Comp.copyPath(c.dataset.copyPath); return; }
+      const d = e.target.closest("[data-del-link]"); if (d) { lfList.splice(lfList.findIndex(x => x.id === d.dataset.delLink), 1); paintLf(); }
+    });
 
     // screenshots: compressed now, saved with the task
     const pending = [];
@@ -143,7 +191,6 @@
     const startIn = f.querySelector("[name=startDate]");
     const markStart = () => f.querySelectorAll("[data-start]").forEach(b => b.classList.toggle("on", b.dataset.start === startIn.value));
     f.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", () => { startIn.value = startIn.value === b.dataset.start ? "" : b.dataset.start; markStart(); }));
-    f.querySelector("[data-clear-start]").addEventListener("click", () => { startIn.value = ""; markStart(); });
     startIn.addEventListener("change", markStart); markStart();
 
     // status + follow-up
@@ -160,7 +207,7 @@
       if (statusSel.value === "waiting" && !fuCheck.checked) showFu(true);
     });
 
-    // templates: fill the form; extra steps, tags, estimate etc. are added on save
+    // templates: fill the form; extra steps and details are added on save
     let tplExtra = null;
     f.querySelectorAll("[data-tpl]").forEach(b => b.addEventListener("click", () => {
       const tpl = Store.templates.get(b.dataset.tpl); if (!tpl) return;
@@ -171,7 +218,8 @@
       if (x.projectId) proj.value = Model.projectName(x.projectId);
       prio = x.priority; f.querySelectorAll("[data-prio] button").forEach(p => p.classList.toggle("on", p.dataset.v === prio));
       step.value = x.steps[0] ? x.steps[0].text : "";
-      tplExtra = { tpl, steps: x.steps.slice(1), tags: x.tags, estimate: x.estimate, details: x.details, recurrence: x.recurrence };
+      if (x.category) { category = x.category; f.querySelectorAll("[data-cat] [data-v]").forEach(c => c.classList.toggle("on", c.dataset.v === category)); }
+      tplExtra = { tpl, steps: x.steps.slice(1), details: x.details };
       const more = f.querySelector("[data-tpl-steps]");
       more.hidden = !tplExtra.steps.length;
       more.textContent = tplExtra.steps.length ? `+ ${App.plural(tplExtra.steps.length, "more step")} from “${tpl.name}”: ${tplExtra.steps.map(s => s.text).join(" → ")}` : "";
@@ -183,6 +231,7 @@
       if (saving) return;
       if (!title.value.trim()) { title.focus(); App.toast("Add a short description of the ask"); return; }
       saving = true;
+      if (lfValue.value.trim()) addLf(); // typed but didn't press Add
       let shots = [];
       try { shots = await Promise.all(pending.map(global.Shots.save)); }
       catch (err) { App.toast(err.message || "Couldn't save the screenshot"); }
@@ -191,6 +240,8 @@
         title: title.value.trim(),
         requesterId: Actions.ensurePerson(req.value),
         projectId: Actions.ensureProject(proj.value),
+        category,
+        links: lfList.slice(),
         due: due.value || "",
         priority: prio,
         source: source.value || (/^me$/i.test(req.value.trim()) ? "self" : ""),
@@ -200,7 +251,7 @@
         log: [Actions.logEntry(tplExtra ? `Created from template “${tplExtra.tpl.name}”` : "Created", true)]
       });
       if (tplExtra) {
-        Object.assign(t, { tags: tplExtra.tags, estimate: tplExtra.estimate, details: tplExtra.details, recurrence: tplExtra.recurrence });
+        t.details = tplExtra.details;
         global.Templates.markUsed(tplExtra.tpl);
       }
       if (fuCheck.checked) {
@@ -249,29 +300,34 @@
 
     const t = t0;
     const body = App.el(`<div class="editor">
-      <textarea class="input title-input" rows="1" name="title" placeholder="What's the ask?" style="min-height:46px;resize:none">${esc(t.title)}</textarea>
+      <div class="field ed-proj"><label>Project</label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(Model.projectName(t.projectId))}"></div></div>
+      <textarea class="input title-input mt-8" rows="1" name="title" placeholder="What's the ask?" style="min-height:46px;resize:none">${esc(t.title)}</textarea>
       <div class="row wrap mt-12">
         <select class="select" name="status" data-st style="width:auto;min-width:190px">${Model.STATUSES.map(s => `<option value="${s.key}" ${t.status === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select>
         <div class="seg" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${t.priority === p.key ? "on" : ""}">${p.label}</button>`).join("")}</div>
         <span data-eff></span>
       </div>
+      <div class="field mt-12"><label>Category</label>${categoryChips(t.category || "")}</div>
 
       <div class="form-grid mt-16">
         <div class="field"><label>Who asked</label><div class="ac"><input class="input" name="requester" placeholder="Name, or “Me”" value="${esc(Model.personName(t.requesterId))}"></div></div>
-        <div class="field"><label>Project</label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(Model.projectName(t.projectId))}"></div></div>
-        <div class="field span-2"><label>Due</label>
-          <div class="row"><input class="input" type="date" name="due" value="${esc(t.due || "")}" style="max-width:200px"><button type="button" class="btn sm ghost" data-clear-due>Clear</button></div>
-          <div class="quick-dates">${quickDateChips("data-date")}</div>
-        </div>
-        ${startField(t.startDate)}
+        <div class="field"><label>How it came in</label><select class="select" name="source">${sourceOptions(t.source)}</select></div>
+        ${toggleField("due", "Due date", "", !!t.due, dueInner(t.due))}
+        ${toggleField("start", "Not until", "Hide it from Today until a date", !!t.startDate, startInner(t.startDate))}
       </div>
 
       <div class="ed-section" data-waiting-wrap></div>
 
       <div class="ed-section">
-        <div class="label">${App.icon("list")}Next steps</div>
+        <div class="label">${App.icon("list")}Next steps &amp; notes</div>
         <div class="steps" data-steps></div>
-        <form class="add-line" data-step-form><input class="input" name="newstep" placeholder="Add a step, press Enter" autocomplete="off"><button class="btn sm" type="submit">Add</button></form>
+        <form class="add-line sn-add" data-step-form>
+          <input class="input" name="newstep" placeholder="Add a next step, or a note about what happened" autocomplete="off">
+          <button class="btn sm" type="submit" title="Add as a next step (Enter)">${App.icon("plus", "xs")}Step</button>
+          <button class="btn sm ghost" type="button" data-add-note title="Add as a note (Shift+Enter)">${App.icon("note", "xs")}Note</button>
+        </form>
+        <div class="sub-label mt-12" data-hist-label hidden>History</div>
+        <div class="log" data-log></div>
       </div>
 
       <div class="ed-section">
@@ -280,28 +336,13 @@
         <div data-shot-drop></div>
       </div>
 
-      <div class="ed-section">
-        <div class="label">${App.icon("note")}Activity log</div>
-        <form class="add-line" data-log-form><input class="input" name="newlog" placeholder="Add a note, e.g. “Emailed Sarah for the data”" autocomplete="off"><button class="btn sm" type="submit">Log</button></form>
-        <div class="log mt-12" data-log></div>
-      </div>
-
-      <div class="ed-section">
-        <div class="label">${App.icon("link")}Links &amp; files</div>
-        <div class="links" data-links></div>
-        <form class="add-line" data-link-form><input class="input" name="url" placeholder="Paste a link (email, Teams, SharePoint…)" autocomplete="off"><input class="input" name="label" placeholder="Label (optional)" style="max-width:170px"><button class="btn sm" type="submit">Add</button></form>
+      <div class="form-grid ed-section">
+        ${toggleField("lf", "File or link", "A file path on the network drive, or a link", (t.links || []).length > 0, `<div class="links" data-links></div>${linkInner}`)}
       </div>
 
       <div class="ed-section">
         <div class="label">${App.icon("edit")}Details</div>
         <textarea class="input" name="details" rows="4" placeholder="Background, specifics, anything you need to remember">${esc(t.details || "")}</textarea>
-      </div>
-
-      <div class="form-grid ed-section">
-        <div class="field"><label>Time estimate (hours)</label><input class="input" type="number" name="estimate" min="0" step="0.25" placeholder="e.g. 1.5" value="${t.estimate ?? ""}"></div>
-        <div class="field"><label>Repeats</label><select class="select" name="recurrence">${Model.RECURRENCE.map(r => `<option value="${r.key}" ${(t.recurrence || "") === r.key ? "selected" : ""}>${esc(r.label)}</option>`).join("")}</select></div>
-        <div class="field"><label>How it came in</label><select class="select" name="source">${sourceOptions(t.source)}</select></div>
-        <div class="field"><label>Tags</label><div class="tag-input ac" data-tags><input name="tag" placeholder="Add tag" autocomplete="off"></div></div>
       </div>
       <div class="ed-meta" data-meta></div>
     </div>`);
@@ -354,34 +395,47 @@
     proj.addEventListener("change", saveProj);
 
     const due = q("[name=due]");
-    const setDue = v => { due.value = v; mutate(t => { if (t.due && v && t.due !== v) Actions.addLog(t, `Due date moved: ${App.fmtDate(t.due)} → ${App.fmtDate(v)}`, true); t.due = v; }); };
+    const setDue = v => { due.value = v; mutate(t => { if ((t.due || "") === v) return; if (t.due && v) Actions.addLog(t, `Due date moved: ${App.fmtDate(t.due)} → ${App.fmtDate(v)}`, true); t.due = v; }); };
     due.addEventListener("change", () => setDue(due.value));
-    q("[data-clear-due]").addEventListener("click", () => setDue(""));
+    const dueTg = bindToggle(body, "due", () => setTimeout(() => { due.focus(); try { due.showPicker && due.showPicker(); } catch (e) { /* ignore */ } }, 30), () => setDue(""));
     const startIn = q("[name=startDate]");
     const setStart = v => { startIn.value = v; mutate(t => { if ((t.startDate || "") === v) return; t.startDate = v; Actions.addLog(t, v ? `Not until ${App.fmtDate(v)}` : "“Not until” cleared", true); }); };
     startIn.addEventListener("change", () => setStart(startIn.value));
-    q("[data-clear-start]").addEventListener("click", () => setStart(""));
+    const startTg = bindToggle(body, "start", () => setTimeout(() => { startIn.focus(); try { startIn.showPicker && startIn.showPicker(); } catch (e) { /* ignore */ } }, 30), () => setStart(""));
+    // category: tap to pick, tap again to clear
+    q("[data-cat]").addEventListener("click", e => {
+      const b = e.target.closest("[data-v]"); if (!b) return;
+      mutate(t => { t.category = t.category === b.dataset.v ? "" : b.dataset.v; });
+    });
     body.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", () => setStart(b.dataset.start)));
     body.querySelectorAll("[data-date]").forEach(b => b.addEventListener("click", () => setDue(b.dataset.date)));
 
     textField(q("[name=details]"), (t, v) => { t.details = v; });
-    textField(q("[name=estimate]"), (t, v) => { const n = parseFloat(v); t.estimate = isFinite(n) && n > 0 ? n : null; });
-    q("[name=recurrence]").addEventListener("change", e => mutate(t => { t.recurrence = e.target.value; if (t.recurrence && !t.due) App.toast("Tip: set a due date so repeats know when to land"); }));
     q("[name=source]").addEventListener("change", e => mutate(t => { t.source = e.target.value; }, true));
 
     // steps
-    q("[data-step-form]").addEventListener("submit", e => {
-      e.preventDefault();
-      const inp = e.target.newstep; const v = inp.value.trim(); if (!v) return;
-      mutate(t => { t.steps = (t.steps || []).concat({ id: App.genId(), text: v, done: false }); });
-      inp.value = ""; inp.focus();
-    });
+    const snInput = q("[name=newstep]");
+    const addStepOrNote = asNote => {
+      const v = snInput.value.trim(); if (!v) { snInput.focus(); return; }
+      if (asNote) mutate(t => Actions.addLog(t, v, false));
+      else mutate(t => { t.steps = (t.steps || []).concat({ id: App.genId(), text: v, done: false }); });
+      snInput.value = ""; snInput.focus();
+    };
+    q("[data-step-form]").addEventListener("submit", e => { e.preventDefault(); addStepOrNote(false); });
+    q("[data-add-note]").addEventListener("click", () => addStepOrNote(true));
+    snInput.addEventListener("keydown", e => { if (e.key === "Enter" && e.shiftKey) { e.preventDefault(); addStepOrNote(true); } });
     q("[data-steps]").addEventListener("click", e => {
       const row = e.target.closest("[data-step-id]"); if (!row) return;
       const sid = row.dataset.stepId;
       const act = e.target.closest("[data-sact]")?.dataset.sact;
       if (act === "toggle") { Actions.completeStep(Store.tasks.get(id), sid); setTimeout(paint, 20); }
-      if (act === "up" || act === "down") mutate(t => { const i = t.steps.findIndex(s => s.id === sid); const j = act === "up" ? i - 1 : i + 1; if (j < 0 || j >= t.steps.length) return; [t.steps[i], t.steps[j]] = [t.steps[j], t.steps[i]]; });
+      if (act === "up" || act === "down") mutate(t => {
+        // swap with the neighbouring open step (finished steps live in History)
+        const openIdx = t.steps.map((s, k) => (s.done ? -1 : k)).filter(k => k >= 0);
+        const pos = openIdx.indexOf(t.steps.findIndex(s => s.id === sid)); const other = openIdx[act === "up" ? pos - 1 : pos + 1];
+        if (pos < 0 || other == null) return;
+        const i = openIdx[pos]; [t.steps[i], t.steps[other]] = [t.steps[other], t.steps[i]];
+      });
       if (act === "del") mutate(t => { t.steps = t.steps.filter(s => s.id !== sid); });
     });
     q("[data-steps]").addEventListener("focusout", e => {
@@ -417,37 +471,34 @@
     }
 
     // log
-    q("[data-log-form]").addEventListener("submit", e => {
-      e.preventDefault();
-      const inp = e.target.newlog; const v = inp.value.trim(); if (!v) return;
-      mutate(t => Actions.addLog(t, v, false));
-      inp.value = ""; inp.focus();
-    });
     q("[data-log]").addEventListener("click", e => {
+      const st = e.target.closest("[data-undo-step]");
+      if (st) { Actions.completeStep(Store.tasks.get(id), st.dataset.undoStep); setTimeout(paint, 20); return; }
       const b = e.target.closest("[data-del-log]"); if (!b) return;
       mutate(t => { t.log = (t.log || []).filter(l => l.id !== b.dataset.delLog); });
     });
 
     // links
-    q("[data-link-form]").addEventListener("submit", e => {
-      e.preventDefault();
-      const url = App.safeUrl(e.target.url.value);
-      if (!url) { App.toast("That doesn't look like a link"); return; }
-      const label = e.target.label.value.trim();
-      mutate(t => { t.links = (t.links || []).concat({ id: App.genId(), url, label }); });
-      e.target.url.value = ""; e.target.label.value = "";
+    const lfValue = q("[name=lfValue]"), lfLabel = q("[name=lfLabel]");
+    const addLf = () => {
+      const item = Editor.parseLinkOrFile(lfValue.value, lfLabel.value.trim());
+      if (!item) { if (lfValue.value.trim()) App.toast("That doesn't look like a link"); return; }
+      mutate(t => { t.links = (t.links || []).concat(item); });
+      lfValue.value = ""; lfLabel.value = ""; lfValue.focus();
+    };
+    q("[data-lf-add]").addEventListener("click", addLf);
+    [lfValue, lfLabel].forEach(inp => inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addLf(); } }));
+    const lfTg = bindToggle(body, "lf", () => setTimeout(() => lfValue.focus(), 30), () => {
+      const before = (Store.tasks.get(id).links || []).slice();
+      if (!before.length) return;
+      mutate(t => { t.links = []; });
+      App.toast(before.length === 1 ? "File/link removed" : `${before.length} files/links removed`, { label: "Undo", onClick: () => mutate(t => { t.links = before; }) });
     });
     q("[data-links]").addEventListener("click", e => {
+      const c = e.target.closest("[data-copy-path]"); if (c) { Comp.copyPath(c.dataset.copyPath); return; }
       const b = e.target.closest("[data-del-link]"); if (!b) return;
       mutate(t => { t.links = (t.links || []).filter(l => l.id !== b.dataset.delLink); });
     });
-
-    // tags
-    const tagBox = q("[data-tags]"); const tagInput = tagBox.querySelector("input");
-    const addTag = v => { v = v.replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-"); if (!v) return; mutate(t => { if (!(t.tags || []).includes(v)) t.tags = (t.tags || []).concat(v); }); tagInput.value = ""; };
-    App.autocomplete(tagInput, { source: qq => Model.allTags().filter(tag => tag.includes(qq.toLowerCase().replace(/^#/, "")) && !(Store.tasks.get(id)?.tags || []).includes(tag)).slice(0, 6).map(tag => ({ label: "#" + tag, value: tag })), onPick: it => addTag(it.value), minChars: 1 });
-    tagInput.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === ",") && tagInput.value.trim()) { e.preventDefault(); addTag(tagInput.value); } else if (e.key === "Backspace" && !tagInput.value) { mutate(t => { t.tags = (t.tags || []).slice(0, -1); }); } });
-    tagBox.addEventListener("click", e => { const b = e.target.closest("[data-del-tag]"); if (b) mutate(t => { t.tags = (t.tags || []).filter(x => x !== b.dataset.delTag); }); else tagInput.focus(); });
 
     foot.querySelector("[data-save-tpl]").addEventListener("click", () => global.Templates.edit(null, Store.tasks.get(id)));
     foot.querySelector("[data-dup]").addEventListener("click", () => { const n = Actions.duplicate(Store.tasks.get(id)); Editor.open(n.id); App.toast("Duplicated — editing the copy"); });
@@ -530,30 +581,38 @@
       if (document.activeElement !== due) due.value = t.due || "";
       body.querySelectorAll("[data-start]").forEach(b => b.classList.toggle("on", b.dataset.start === t.startDate));
       if (document.activeElement !== startIn) startIn.value = t.startDate || "";
+      if (t.due && !dueTg.cb.checked) dueTg.set(true);
+      if (t.startDate && !startTg.cb.checked) startTg.set(true);
+      if ((t.links || []).length && !lfTg.cb.checked) lfTg.set(true);
+      body.querySelectorAll("[data-cat] [data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === (t.category || "")));
+      if (document.activeElement !== proj) proj.value = Model.projectName(t.projectId);
       paintWaiting(t);
       paintShots(t);
 
+      // open steps (checklist you can reorder and edit)
       const next = Model.nextStep(t);
+      const open = (t.steps || []).filter(s => !s.done);
       const stepsEl = q("[data-steps]");
       if (!stepsEl.contains(document.activeElement) || !document.activeElement.classList.contains("txt")) {
-        stepsEl.innerHTML = (t.steps || []).length ? t.steps.map((s, i) => `<div class="step ${s.done ? "done" : ""} ${next && next.id === s.id ? "is-next" : ""}" data-step-id="${esc(s.id)}">
-          <button type="button" class="check sq ${s.done ? "on" : ""}" data-sact="toggle" aria-label="Toggle step">${App.icon("check")}</button>
+        stepsEl.innerHTML = open.length ? open.map((s, i) => `<div class="step ${next && next.id === s.id ? "is-next" : ""}" data-step-id="${esc(s.id)}">
+          <button type="button" class="check sq" data-sact="toggle" aria-label="Mark step done">${App.icon("check")}</button>
           <div class="txt" contenteditable="true" spellcheck="true">${esc(s.text)}</div>
           ${next && next.id === s.id ? `<span class="next-tag">Next</span>` : ""}
           <div class="tools">
             <button type="button" class="icon-btn sm plain" data-sact="up" title="Move up" ${i === 0 ? "disabled" : ""}>${App.icon("up")}</button>
-            <button type="button" class="icon-btn sm plain" data-sact="down" title="Move down" ${i === t.steps.length - 1 ? "disabled" : ""}>${App.icon("down")}</button>
+            <button type="button" class="icon-btn sm plain" data-sact="down" title="Move down" ${i === open.length - 1 ? "disabled" : ""}>${App.icon("down")}</button>
             <button type="button" class="icon-btn sm plain danger" data-sact="del" title="Remove">${App.icon("x")}</button>
-          </div></div>`).join("") : `<div class="muted" style="font-size:.86rem;padding:4px 0 6px">No steps yet. The first unchecked step shows as “Next step” everywhere.</div>`;
+          </div></div>`).join("") : `<div class="muted" style="font-size:.86rem;padding:4px 0 6px">No open steps. The first one shows as “Next step” everywhere.</div>`;
       }
 
-      const log = (t.log || []).slice().reverse();
-      q("[data-log]").innerHTML = log.length ? log.map(l => `<div class="log-item ${l.auto ? "auto" : ""}"><div class="when">${esc(App.fmtIsoTime(l.at))}${l.auto ? "" : `<button type="button" class="icon-btn sm plain del" data-del-log="${esc(l.id)}" title="Delete note" style="width:20px;height:20px;vertical-align:middle">${App.icon("x", "xs")}</button>`}</div><div class="text">${esc(l.text)}</div></div>`).join("") : `<div class="muted" style="font-size:.86rem">Nothing logged yet.</div>`;
+      // history: finished steps and notes together, newest first
+      const hist = (t.log || []).filter(l => !(l.auto && /^Step done: /.test(l.text))).map(l => ({ at: l.at || "", html: `<div class="log-item ${l.auto ? "auto" : "is-note"}"><div class="when">${esc(App.fmtIsoTime(l.at))}${l.auto ? "" : `<button type="button" class="icon-btn sm plain del" data-del-log="${esc(l.id)}" title="Delete note" style="width:20px;height:20px;vertical-align:middle">${App.icon("x", "xs")}</button>`}</div><div class="text">${esc(l.text)}</div></div>` }))
+        .concat((t.steps || []).filter(s => s.done).map(s => ({ at: s.doneAt || "", html: `<div class="log-item step-done"><div class="when">${s.doneAt ? esc(App.fmtIsoTime(s.doneAt)) : "Done"}</div><div class="text"><button type="button" class="check sq on" data-undo-step="${esc(s.id)}" title="Not done yet" aria-label="Mark step not done">${App.icon("check")}</button><span>${esc(s.text)}</span></div></div>` })))
+        .sort((x, y) => y.at.localeCompare(x.at));
+      q("[data-hist-label]").hidden = !hist.length;
+      q("[data-log]").innerHTML = hist.map(h => h.html).join("");
 
-      q("[data-links]").innerHTML = (t.links || []).map(l => `<div class="link-row">${App.icon("link", "sm")}<a href="${esc(App.safeUrl(l.url))}" target="_blank" rel="noopener noreferrer">${esc(l.label || l.url)}</a><button type="button" class="icon-btn sm plain" data-del-link="${esc(l.id)}" title="Remove link">${App.icon("x")}</button></div>`).join("");
-
-      tagBox.querySelectorAll(".tag-chip").forEach(c => c.remove());
-      (t.tags || []).forEach(tag => tagInput.insertAdjacentHTML("beforebegin", `<span class="tag-chip">#${esc(tag)}<button type="button" data-del-tag="${esc(tag)}" aria-label="Remove tag">${App.icon("x", "xs")}</button></span>`));
+      q("[data-links]").innerHTML = (t.links || []).slice().sort((a, b) => (b.path ? 1 : 0) - (a.path ? 1 : 0)).map(Editor.linkRowHtml).join("");
 
       const src = Model.source(t.source);
       q("[data-meta]").innerHTML = [
@@ -577,7 +636,7 @@
       else if (opts.focus === "due") { due.focus(); try { due.showPicker && due.showPicker(); } catch (e) { /* ignore */ } }
       else if (opts.focus === "waiting") { body.querySelector("[name=waitPerson]")?.focus(); body.querySelector("[data-waiting-wrap]").scrollIntoView({ block: "center" }); }
       else if (opts.focus === "step") q("[name=newstep]").focus();
-      else if (opts.focus === "log") q("[name=newlog]").focus();
+      else if (opts.focus === "log") q("[name=newstep]").focus();
       else if (!t.title) title.focus();
     }, 120);
   };

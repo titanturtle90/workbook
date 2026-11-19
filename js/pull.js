@@ -21,7 +21,7 @@
 
   const touchDevice = () => global.matchMedia("(pointer: coarse)").matches;
   const overlayOpen = () => App.sheet.isOpen() || App.menu.isOpen() || App.dialogOpen() || (global.Shots && global.Shots.isViewing()) || (global.Bulk && global.Bulk.active);
-  const blockedTarget = t => !!(t && t.closest && t.closest(".sheet, .menu, .dialog, .lightbox, .bulkbar, input, textarea, select, [contenteditable='true'], [contenteditable='']"));
+  const blockedTarget = t => !!(t && t.closest && t.closest(".sheet, .menu, .dialog, .lightbox, .bulkbar, .drag-handle, input, textarea, select, [contenteditable='true'], [contenteditable='']"));
 
   function paint(dist, base, mode) {
     const p = Math.min(1, dist / THRESHOLD);

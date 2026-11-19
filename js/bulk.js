@@ -161,7 +161,7 @@
     let timer = null, startX = 0, startY = 0, host = null;
     root.addEventListener("touchstart", e => {
       host = e.target.closest("[data-task-id]");
-      if (!host || !root.contains(host) || e.touches.length > 1) return;
+      if (!host || !root.contains(host) || e.touches.length > 1 || e.target.closest(".drag-handle")) return; // the handle drags instead
       startX = e.touches[0].clientX; startY = e.touches[0].clientY;
       clearTimeout(timer);
       timer = setTimeout(() => {

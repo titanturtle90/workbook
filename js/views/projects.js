@@ -120,13 +120,12 @@
     const open = tasks.filter(Model.isActive).sort(Model.comparator("smart"));
     const groups = Model.group(open, "status");
     const done = tasks.filter(t => !Model.isActive(t)).sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || "")).slice(0, 20);
-    const hours = open.reduce((sum, t) => sum + (t.estimate || 0), 0);
     panel.innerHTML = `
       <a class="back-link" href="#projects">${App.icon("back", "sm")}Projects</a>
       ${p.photo ? `<button type="button" class="pbanner" data-img="${esc(p.photo.id)}" data-view-photo aria-label="View project photo"></button>` : ""}
       <div class="detail-head">
         <span class="sw" style="width:18px;height:18px;border-radius:5px;background:${esc(p.color)}"></span>
-        <div class="grow"><h1>${esc(p.name)}</h1><p class="lede muted">${s.done} of ${s.total} done${hours ? ` · ≈ ${Comp.fmtHours(hours)} left` : ""}${p.archived ? " · archived" : ""}</p></div>
+        <div class="grow"><h1>${esc(p.name)}</h1><p class="lede muted">${s.done} of ${s.total} done${p.archived ? " · archived" : ""}</p></div>
         <button class="btn sm ghost" type="button" data-edit>${App.icon("edit", "sm")}Edit</button>
         <button class="btn sm primary" type="button" data-new>${App.icon("plus", "sm")}Add task</button>
       </div>

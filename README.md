@@ -8,14 +8,20 @@ No build step: plain HTML/CSS/JS served statically (GitHub Pages), with Firebase
 
 | Area | What it does |
 | --- | --- |
-| **Dashboard** | Switch between three views (top right, or press `T`): **Today** (overdue, due today, follow-ups due, the rest of this week, waiting on others, new asks to triage, then everything else), **Table** (sortable columns, group by requester / project / status / priority / due) and **Calendar** (month grid of due dates and follow-ups; click a day for its list, drag to reschedule). Table and Calendar share search plus filters for who asked, project, status, priority, due, tags, and self-assigned. On a phone the table becomes cards. |
+| **Dashboard** | Switch between three views (top right, or press `T`): **Today** (overdue, due today, follow-ups due, the rest of this week, waiting on others, new asks to triage, then everything else), **Table** (sortable columns, group by requester / project / category / status / priority / due) and **By project** (every project under its own header, with its tasks grouped beneath). Table and By project share search plus filters for who asked, project, category, status, priority, due, and self-assigned. On a phone the table becomes cards. |
 | **People** | Everyone who asks you for things: open asks, overdue, what you're waiting on them for, and their history. "Me" holds your self-assigned tasks. |
 | **Projects** | Name, color, short description and an optional photo; progress bar, open/done counts, next due date, and a page per project. |
 | **Done** | Searchable archive of finished work, filterable by month. |
-| **Weekly review** | A guided Friday pass: wins, slipped tasks, follow-ups, tasks missing a next step, stale tasks, and next week's load vs. your capacity. |
+| **Weekly review** | A guided Friday pass: wins, slipped tasks, follow-ups, tasks missing a next step, stale tasks, and what's due next week. |
 | **Export** | CSV for Excel (open or all tasks), a "what I did this month" summary, and JSON backup/restore. |
 
-Every task has: the ask, requester (or **Me** for self-assigned), project, due date, status (New, Not Started, In Progress, Waiting On Someone, In Review, Blocked, Done, Cancelled), priority (High/Medium/Low, exactly as you set it), an ordered **next steps** checklist, a dated **activity log**, who you're **waiting on** with a follow-up date, links, a time estimate, tags, and an optional **repeat** schedule (a new copy is created when you finish it).
+Every task has: its project (shown in front of the task everywhere), the ask, a **category** (RFI, Submittal, PO, Material, Change Order, Shop Drawing, Quote / Pricing, Invoice, Schedule, Other), requester (or **Me** for self-assigned), status (New, Not Started, In Progress, Waiting On Someone, In Review, Blocked, Done, Cancelled), priority (High/Medium/Low, exactly as you set it), and who you're **waiting on** with a follow-up date. **Due date**, **Not until** and **File or link** are tick boxes: tick one to show its fields, untick it to clear them.
+
+**Next steps & notes:** one section per task. Type and press Enter (or **Step**) to add a next step, or **Note** (Shift+Enter) to log what happened. Open steps sit on top as a checklist; ticked steps and notes move into a dated **History** underneath.
+
+**Files & links:** paste a file path from File Explorer (e.g. `\\server\Projects\Job 1042\RFI-012.pdf`) or a web link. Browsers can't open network files from a web page, so a file shows a **Copy** button: paste the path into File Explorer's address bar.
+
+**Drag to arrange:** grab the ⋮⋮ handle on any task to drag it into your own order, on Today, Table and By project (mouse or finger). Your order is saved and syncs; new asks land on top. Table and By project use it when **Sort** is set to **My order** (the default).
 
 **Screenshots:** snip the original request (e.g. `Win+Shift+S` on Windows, `Cmd+Shift+4` on Mac) and paste it with `Ctrl+V`/`Cmd+V`. Paste anywhere in Workbook to start a new task with the snip attached, or paste/drop/choose an image under **Next step** in a task. On a phone, pick from your photos or take a photo. Screenshots are shrunk to fit in Firestore (`users/{uid}/images`) and load only when you open a task; click one to see it full size.
 
@@ -27,7 +33,7 @@ Every task has: the ask, requester (or **Me** for self-assigned), project, due d
 
 **Swipe (phones):** swipe a card right to mark it done, left to make it due tomorrow.
 
-**Templates:** open a task and choose **Save as template**, or manage them in Settings → Task templates. Pick one at the top of the New task form to fill in the title, steps, person, project, priority, tags, estimate and repeat schedule.
+**Templates:** open a task and choose **Save as template**, or manage them in Settings → Task templates. Pick one at the top of the New task form to fill in the title, steps, person, project, category and priority.
 
 **Pull to refresh (phones):** drag the page down from the very top and let go to reload Workbook with the latest version and fresh data. It doesn't trigger while you're scrolled down, typing, or have a panel open.
 
@@ -44,12 +50,12 @@ Press `?` in the app for the full list.
 | `M` | New meeting note | `X` | Mark done / reopen |
 | `/` | Search | `S` | Change status (then `1`–`8`) |
 | `1`–`6` | Dashboard, People, Projects, Meetings, Done, Review | `P` | Cycle priority |
-| `T` | Switch Today → Table → Calendar | `D` | Change due date |
+| `T` | Switch Today → Table → By project | `D` | Change due date |
 | `[` | Collapse / expand the side menu |
 | `Esc` | Close | `F` | Finish the next step |
 | | | `Z` | Not until… |
 | | | `V` | Select (change several) |
-| | | `L` | Log a note |
+| | | `L` | Add a step or note |
 
 ## Setup
 
@@ -82,11 +88,11 @@ index.html               app shell + icons
 css/app.css              design system (navy, light + dark)
 js/firebase-config.js    your Firebase web config (empty = preview mode)
 js/core.js               helpers, dates, toast, dialog, sheet/drawer, menus, autocomplete
-js/model.js              task shape, statuses, priority bumping, sort/group/filter, recurrence
+js/model.js              task shape, statuses, categories, sort/group/filter, manual order
 js/store.js              Firestore (users/{uid}/…) or local preview storage
 js/components.js         task cards/pills + shared actions (complete, status, steps…)
 js/editor.js             quick add, meeting mode, full task editor
-js/views/*.js            Dashboard (Today/Table/Calendar), People, Projects, Meetings, Done, Weekly review
+js/views/*.js            Dashboard (Today/Table/By project), People, Projects, Meetings, Done, Weekly review
 js/export.js             CSV, monthly summary, backup/restore
 js/shortcuts.js          keyboard shortcuts
 js/pull.js               pull to refresh (phones)

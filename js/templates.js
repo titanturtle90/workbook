@@ -18,10 +18,8 @@
     projectId: tpl.projectId && Store.projects.has(tpl.projectId) ? tpl.projectId : "",
     priority: tpl.priority || "medium",
     steps: (tpl.steps || []).filter(Boolean).map(text => ({ id: App.genId(), text, done: false })),
-    estimate: tpl.estimate || null,
-    tags: (tpl.tags || []).slice(),
-    details: tpl.details || "",
-    recurrence: tpl.recurrence || ""
+    category: tpl.category || "",
+    details: tpl.details || ""
   });
   Templates.markUsed = tpl => Store.save("templates", Object.assign({}, tpl, { usedAt: new Date().toISOString() }));
 
@@ -32,8 +30,8 @@
       name: fromTask ? fromTask.title : "", title: fromTask ? fromTask.title : "",
       steps: fromTask ? (fromTask.steps || []).map(s => s.text) : [],
       requesterId: fromTask ? fromTask.requesterId || "" : "", projectId: fromTask ? fromTask.projectId || "" : "",
-      priority: fromTask ? fromTask.priority : "medium", estimate: fromTask ? fromTask.estimate : null,
-      tags: fromTask ? (fromTask.tags || []).slice() : [], details: fromTask ? fromTask.details || "" : "", recurrence: fromTask ? fromTask.recurrence || "" : ""
+      priority: fromTask ? fromTask.priority : "medium", category: fromTask ? fromTask.category || "" : "",
+      details: fromTask ? fromTask.details || "" : ""
     };
     const body = App.el(`<form autocomplete="off">
       <div class="field"><label>Template name</label><input class="input" name="name" required value="${esc(t.name)}" placeholder="e.g. Monthly report"></div>
@@ -44,9 +42,7 @@
         <div class="field"><label>Who asked <span class="muted">(optional)</span></label><div class="ac"><input class="input" name="requester" placeholder="Name, or “Me”" value="${esc(Model.personName(t.requesterId))}"></div></div>
         <div class="field"><label>Project <span class="muted">(optional)</span></label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(Model.projectName(t.projectId))}"></div></div>
         <div class="field"><label>Priority</label><div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${(t.priority || "medium") === p.key ? "on" : ""}">${p.label}</button>`).join("")}</div></div>
-        <div class="field"><label>Time estimate (hours)</label><input class="input" type="number" name="estimate" min="0" step="0.25" value="${t.estimate ?? ""}"></div>
-        <div class="field"><label>Repeats</label><select class="select" name="recurrence">${Model.RECURRENCE.map(r => `<option value="${r.key}" ${(t.recurrence || "") === r.key ? "selected" : ""}>${esc(r.label)}</option>`).join("")}</select></div>
-        <div class="field"><label>Tags <span class="muted">(comma separated)</span></label><input class="input" name="tags" value="${esc((t.tags || []).join(", "))}"></div>
+        <div class="field"><label>Category</label><select class="select" name="category"><option value="">—</option>${Model.CATEGORIES.map(c => `<option value="${c.key}" ${t.category === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select></div>
         <div class="field span-2"><label>Details</label><textarea class="input" name="details" rows="3">${esc(t.details || "")}</textarea></div>
       </div>
       <button type="submit" hidden></button>
@@ -66,9 +62,8 @@
       t.requesterId = Actions.ensurePerson(q("requester").value);
       t.projectId = Actions.ensureProject(q("project").value);
       t.priority = prio;
-      const est = parseFloat(q("estimate").value); t.estimate = isFinite(est) && est > 0 ? est : null;
-      t.recurrence = q("recurrence").value;
-      t.tags = q("tags").value.split(",").map(x => x.trim().replace(/^#/, "").toLowerCase().replace(/\s+/g, "-")).filter(Boolean);
+      t.category = q("category").value;
+      delete t.estimate; delete t.recurrence; delete t.tags;
       t.details = q("details").value.trim();
       Store.save("templates", t);
       App.sheet.close();
@@ -93,7 +88,7 @@
     App.sheet.open({ title: "Task templates", subtitle: "Reusable checklists for asks that come up often", body, foot });
     const list = Templates.list();
     body.innerHTML = list.length ? list.map(t => `<button type="button" class="mrow" data-tpl="${esc(t.id)}">${App.icon("template")}<div class="grow"><div>${esc(t.name)}</div>
-        <div class="sub">${esc([App.plural((t.steps || []).length, "step"), Model.projectName(t.projectId), t.recurrence ? Model.recurrence(t.recurrence).label : ""].filter(Boolean).join(" · "))}</div></div>${App.icon("edit", "sm")}</button>`).join("")
+        <div class="sub">${esc([App.plural((t.steps || []).length, "step"), Model.projectName(t.projectId), Model.categoryLabel(t.category)].filter(Boolean).join(" · "))}</div></div>${App.icon("edit", "sm")}</button>`).join("")
       : `<div class="empty"><div class="big">📋</div><h3>No templates yet</h3><p>Create one here, or open any task and choose <b>Save as template</b>.</p></div>`;
     body.querySelectorAll("[data-tpl]").forEach(b => b.onclick = () => Templates.edit(Store.templates.get(b.dataset.tpl), null, Templates.manage));
     foot.querySelector("[data-new]").onclick = () => Templates.edit(null, null, Templates.manage);

@@ -39,10 +39,23 @@
     { key: "monthly", label: "Every month" },
     { key: "quarterly", label: "Every 3 months" }
   ];
+  // Common kinds of ask (Settings can't change these yet; "Other" covers the rest)
+  const CATEGORIES = [
+    { key: "rfi", label: "RFI" },
+    { key: "submittal", label: "Submittal" },
+    { key: "po", label: "PO" },
+    { key: "material", label: "Material" },
+    { key: "change_order", label: "Change Order" },
+    { key: "shop_drawing", label: "Shop Drawing" },
+    { key: "quote", label: "Quote / Pricing" },
+    { key: "invoice", label: "Invoice" },
+    { key: "schedule", label: "Schedule" },
+    { key: "other", label: "Other" }
+  ];
   const PROJECT_COLORS = ["#2a5bd7", "#7149d0", "#0e8a7d", "#1f8a4c", "#a67c00", "#d0700a", "#d43a2f", "#be185d", "#0369a1", "#475569"];
   const ME = "me";
 
-  const Model = { STATUSES, PRIORITIES, SOURCES, RECURRENCE, PROJECT_COLORS, ME };
+  const Model = { STATUSES, PRIORITIES, SOURCES, RECURRENCE, CATEGORIES, PROJECT_COLORS, ME };
   Model.FOLLOW_UP_DAYS = 2; // default gap before nudging someone you are waiting on
   Model.ACTIVE_STATUSES = STATUSES.filter(s => s.key !== "done" && s.key !== "cancelled");
   Model.status = key => STATUSES.find(s => s.key === key) || STATUSES[0];
@@ -50,6 +63,8 @@
   Model.priorityDot = key => key === "urgent" ? "var(--pr-urgent-bg)" : `var(--pr-${key})`;
   Model.priority = key => PRIORITIES.find(p => p.key === key) || PRIORITIES[1];
   Model.source = key => SOURCES.find(s => s.key === key);
+  Model.category = key => key ? CATEGORIES.find(c => c.key === key) || null : null;
+  Model.categoryLabel = key => Model.category(key)?.label || "";
   Model.recurrence = key => RECURRENCE.find(r => r.key === (key || "")) || RECURRENCE[0];
 
   Model.newTask = (partial) => {
@@ -60,6 +75,7 @@
       details: "",
       requesterId: "",
       projectId: "",
+      category: "",
       status: "new",
       priority: "medium",
       due: "",
@@ -73,12 +89,20 @@
       tags: [],
       recurrence: "",
       source: "",
+      order: Model.topOrder(), // manual position (drag to reorder); lower comes first, new asks land on top
       createdAt: now,
       updatedAt: now,
       completedAt: ""
     }, partial || {});
   };
 
+  /** An order value that puts a new task above everything you've arranged (null if you haven't arranged anything). */
+  Model.topOrder = () => {
+    if (!global.Store || !global.Store.tasks) return null;
+    let min = Infinity;
+    global.Store.tasks.forEach(t => { if (typeof t.order === "number" && t.order < min) min = t.order; });
+    return min === Infinity ? null : min - 1;
+  };
   Model.isActive = t => t.status !== "done" && t.status !== "cancelled";
   Model.isSnoozed = t => Model.isActive(t) && !!t.startDate && t.startDate > App.today();
   Model.isSelf = t => t.requesterId === ME;
@@ -166,9 +190,9 @@
     if (!f) return true;
     if (f.requesters && f.requesters.length && !f.requesters.includes(t.requesterId || "")) return false;
     if (f.projects && f.projects.length && !f.projects.includes(t.projectId || "")) return false;
+    if (f.categories && f.categories.length && !f.categories.includes(t.category || "")) return false;
     if (f.statuses && f.statuses.length && !f.statuses.includes(t.status)) return false;
     if (f.priorities && f.priorities.length && !f.priorities.includes(Model.effPriority(t).key)) return false;
-    if (f.tags && f.tags.length && !f.tags.every(tag => (t.tags || []).includes(tag))) return false;
     if (f.self === true && !Model.isSelf(t)) return false;
     if (f.hideSnoozed && Model.isSnoozed(t)) return false;
     if (f.self === false && Model.isSelf(t)) return false;
@@ -177,7 +201,7 @@
       if (f.due === "week" ? !["overdue", "today", "tomorrow", "week"].includes(b) : b !== f.due) return false;
     }
     if (f.q) {
-      const hay = [t.title, t.details, Model.requesterName(t), Model.projectName(t.projectId), (t.tags || []).join(" "),
+      const hay = [t.title, t.details, Model.requesterName(t), Model.projectName(t.projectId), Model.categoryLabel(t.category), (t.links || []).map(l => (l.label || "") + " " + (l.path || l.url || "")).join(" "),
         (t.steps || []).map(s => s.text).join(" "), (t.log || []).map(l => l.text).join(" "),
         Model.personName(t.waiting?.personId), t.waiting?.note || ""].join(" ").toLowerCase();
       if (!f.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w))) return false;
@@ -187,12 +211,14 @@
 
   // ---------- sorting ----------
   Model.SORTS = [
+    { key: "manual", label: "My order (drag to arrange)" },
     { key: "smart", label: "Smart (priority + due)" },
     { key: "due", label: "Due date" },
     { key: "requester", label: "Who asked" },
     { key: "title", label: "Task (A–Z)" },
     { key: "next", label: "Next step (A–Z)" },
     { key: "project", label: "Project" },
+    { key: "category", label: "Category" },
     { key: "status", label: "Status" },
     { key: "priority", label: "Priority" },
     { key: "created", label: "Newest first" },
@@ -201,10 +227,17 @@
   const cmpStr = (a, b) => (a || "￿").localeCompare(b || "￿", undefined, { sensitivity: "base" });
   const dueKey = t => t.due || "9999-12-31";
   const smart = (a, b) => (Model.effRank(b) - Model.effRank(a)) || dueKey(a).localeCompare(dueKey(b)) || cmpStr(a.title, b.title);
+  const orderKey = t => (typeof t.order === "number" ? t.order : Infinity);
+  /** Your drag-and-drop order; tasks you haven't placed yet follow in smart order. */
+  const manual = (a, b) => (orderKey(a) - orderKey(b) || 0) || smart(a, b);
+  Model.manualCompare = manual;
+  const catIndex = t => { const i = CATEGORIES.findIndex(c => c.key === t.category); return i < 0 ? 99 : i; };
   Model.comparator = (key, dir) => {
     const sign = dir === "desc" ? -1 : 1;
     const by = {
+      manual,
       smart,
+      category: (a, b) => (catIndex(a) - catIndex(b)) || manual(a, b),
       due: (a, b) => dueKey(a).localeCompare(dueKey(b)) || smart(a, b),
       requester: (a, b) => cmpStr(Model.requesterName(a), Model.requesterName(b)) || smart(a, b),
       title: (a, b) => cmpStr(a.title, b.title),
@@ -223,6 +256,7 @@
     { key: "", label: "No grouping" },
     { key: "requester", label: "Who asked" },
     { key: "project", label: "Project" },
+    { key: "category", label: "Category" },
     { key: "status", label: "Status" },
     { key: "priority", label: "Priority" },
     { key: "due", label: "Due date" }
@@ -235,6 +269,7 @@
     tasks.forEach(t => {
       if (by === "requester") { const id = t.requesterId || ""; add(id, { label: id ? Model.personName(id) || "Unknown" : "No requester", order: id === ME ? "0" : id ? "1" + Model.personName(id).toLowerCase() : "2" }, t); }
       else if (by === "project") { const p = Model.project(t.projectId); add(p ? p.id : "", { label: p ? p.name : "No project", color: p?.color, order: p ? "0" + p.name.toLowerCase() : "1" }, t); }
+      else if (by === "category") { const c = Model.category(t.category); add(c ? c.key : "", { label: c ? c.label : "No category", order: String(c ? CATEGORIES.indexOf(c) : 99).padStart(2, "0") }, t); }
       else if (by === "status") { const i = STATUSES.findIndex(s => s.key === t.status); add(t.status, { label: Model.status(t.status).label, dot: Model.statusDot(t.status), order: String(i).padStart(2, "0") }, t); }
       else if (by === "priority") { const p = Model.effPriority(t); add(p.key, { label: p.label, order: String(9 - Model.effRank(t)) }, t); }
       else if (by === "due") { const b = Model.dueBucket(t); add(b, { label: Model.DUE_BUCKETS[b], order: String(Object.keys(Model.DUE_BUCKETS).indexOf(b)) }, t); }

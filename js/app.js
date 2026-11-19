@@ -103,7 +103,7 @@
       <button type="button" class="mrow" data-a="templates">${App.icon("template")}<div class="grow"><div>Task templates</div><div class="sub">${Store.templates.size ? App.plural(Store.templates.size, "template") : "Reusable checklists"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow"><div>Recently deleted</div><div class="sub">${Store.trash.size ? App.plural(Store.trash.size, "task") + " · kept 30 days" : "Empty"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="export">${App.icon("download")}<div class="grow"><div>Export &amp; reports</div><div class="sub">Excel, monthly summary, backup</div></div>${App.icon("right", "sm")}</button>
-      <button type="button" class="mrow" data-a="settings">${App.icon("settings")}<div class="grow"><div>Settings</div><div class="sub">Theme, capacity, account</div></div>${App.icon("right", "sm")}</button>
+      <button type="button" class="mrow" data-a="settings">${App.icon("settings")}<div class="grow"><div>Settings</div><div class="sub">Theme, templates, account</div></div>${App.icon("right", "sm")}</button>
     </div>`);
     App.sheet.open({ title: "More", body });
     body.onclick = e => {
@@ -202,11 +202,7 @@
         <span class="muted" style="font-size:.78rem">Priority is exactly what you set. It isn't changed by due dates.</span>
       </div>
       <div class="field mt-16"><label>Dashboard opens on</label>
-        <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["calendar", "Calendar"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${(App.lsGet("wb:dashStart", "last") === "board" ? "table" : App.lsGet("wb:dashStart", "last")) === v ? "on" : ""}">${l}</button>`).join("")}</div>
-      </div>
-      <div class="field mt-16"><label>Weekly capacity (hours of task work)</label>
-        <input class="input" type="number" min="1" max="80" step="1" data-capacity value="${esc(Store.setting("weeklyCapacity", 30))}" style="max-width:140px">
-        <span class="muted" style="font-size:.8rem">Used by the weekly review to warn when next week is overloaded.</span>
+        <div class="seg">${[["last", "Last used"], ["today", "Today"], ["table", "Table"], ["projects", "By project"]].map(([v, l]) => `<button type="button" data-start="${v}" class="${({ board: "table", calendar: "projects" }[App.lsGet("wb:dashStart", "last")] || App.lsGet("wb:dashStart", "last")) === v ? "on" : ""}">${l}</button>`).join("")}</div>
       </div>
       <div class="mt-16">
         <button type="button" class="mrow" data-a="shortcuts">${App.icon("keyboard")}<div class="grow">Keyboard shortcuts</div>${App.icon("right", "sm")}</button>
@@ -223,8 +219,6 @@
       body.querySelectorAll("[data-theme]").forEach(x => x.classList.toggle("on", x === b));
     });
     body.querySelectorAll("[data-start]").forEach(b => b.onclick = () => { App.lsSet("wb:dashStart", b.dataset.start); body.querySelectorAll("[data-start]").forEach(x => x.classList.toggle("on", x === b)); });
-    const cap = body.querySelector("[data-capacity]");
-    cap.onchange = () => { const n = Math.max(1, Math.min(80, Number(cap.value) || 30)); cap.value = n; Store.setSetting("weeklyCapacity", n); };
     body.querySelectorAll("[data-a]").forEach(b => b.onclick = () => doAction(b.dataset.a));
     const so = body.querySelector("[data-signout]");
     if (so) so.onclick = async () => { if (await App.confirm({ title: "Sign out?", text: "Your tasks stay safe in your account.", okLabel: "Sign out" })) { App.sheet.close(); Auth.signOut(); } };

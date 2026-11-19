@@ -13,12 +13,12 @@
     ]],
     ["Go to", [
       [["1"], "Dashboard"], [["2"], "People"], [["3"], "Projects"], [["4"], "Meetings"], [["5"], "Done"], [["6"], "Weekly review"],
-      [["T"], "Switch Today → Table → Calendar"], [["["], "Collapse / expand the side menu"]
+      [["T"], "Switch Today → Table → By project"], [["["], "Collapse / expand the side menu"]
     ]],
     ["Selected task", [
       [["J"], "Next task (or ↓)"], [["K"], "Previous task (or ↑)"], [["Enter"], "Open"], [["X"], "Mark done / reopen"],
       [["S"], "Change status (then 1–8)"], [["P"], "Cycle priority"], [["D"], "Change due date"], [["Z"], "Not until… (hide from Today)"], [["V"], "Select / unselect (change several at once)"], [["F"], "Finish the next step"],
-      [["L"], "Log a note"], [["Del"], "Delete"]
+      [["L"], "Add a note"], [["Del"], "Delete"]
     ]],
     ["In a form", [
       [["Enter"], "Add (quick add, steps, notes)"], [["Ctrl", "Enter"], "Save & close"], [["↑", "↓"], "Pick from suggestions"]

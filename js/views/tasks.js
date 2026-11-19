@@ -1,16 +1,20 @@
-/* Dashboard: Today (what needs you now), Table (sortable columns, grouping) and Calendar (due dates by day). Table and Calendar share search + filters. */
+/* Dashboard: Today (what needs you now), Table (sortable columns, grouping) and By project (everything grouped under each project). Table and By project share search + filters, and all three can be arranged by dragging. */
 (function (global) {
   "use strict";
   const App = global.App, Model = global.Model, Store = global.Store, Comp = global.Comp, Actions = global.Actions;
   const esc = App.esc;
   const Views = global.Views = global.Views || {};
 
-  const DEFAULT = { mode: "today", sort: "smart", dir: "asc", group: "", filters: { requesters: [], projects: [], statuses: [], priorities: [], tags: [], self: null, due: "", hideSnoozed: false } };
+  const DEFAULT = { mode: "today", sort: "manual", dir: "asc", group: "", filters: { requesters: [], projects: [], categories: [], statuses: [], priorities: [], self: null, due: "", hideSnoozed: false } };
   const state = Object.assign({}, DEFAULT, App.lsGet("wb:tasksView", {}));
   state.filters = Object.assign({}, DEFAULT.filters, state.filters || {});
   const dashStart = App.lsGet("wb:dashStart", "last"); // Settings → "Dashboard opens on"
   if (dashStart !== "last") state.mode = dashStart;
   if (state.mode === "board") state.mode = "table"; // the Board view was removed
+  if (state.mode === "calendar") state.mode = "projects"; // the Calendar view was replaced by By project
+  if (dashStart === "calendar") App.lsSet("wb:dashStart", "projects");
+  if (!App.lsGet("wb:manualSortOn", false)) { state.sort = "manual"; state.dir = "asc"; App.lsSet("wb:manualSortOn", true); } // drag-to-arrange became the default
+  delete state.filters.tags; // tags were retired
   if (!Model.AUTO_RAISE_PRIORITY) state.filters.priorities = (state.filters.priorities || []).filter(k => k !== "urgent"); // Urgent only existed as an automatic level
   if (dashStart === "board") App.lsSet("wb:dashStart", "table");
   let query = "";
@@ -31,8 +35,8 @@
   }
   function toggleIn(arr, v) { const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); }
   const FILTER_KEYS = [
-    ["requesters", "Who asked"], ["projects", "Project"], ["statuses", "Status"],
-    ["priorities", "Priority"], ["due", "Due"], ["tags", "Tag"]
+    ["requesters", "Who asked"], ["projects", "Project"], ["categories", "Category"], ["statuses", "Status"],
+    ["priorities", "Priority"], ["due", "Due"]
   ];
   const DUE_CHOICES = [["overdue", "Overdue"], ["today", "Due today"], ["week", "Due this week"], ["next", "Next 2 weeks"], ["later", "Later"], ["none", "No due date"]];
 
@@ -54,7 +58,11 @@
     if (key === "statuses") return Model.ACTIVE_STATUSES.map(st => ({ value: st.key, label: st.label, dot: Model.statusDot(st.key), on: f.statuses.includes(st.key) }));
     if (key === "priorities") return (Model.AUTO_RAISE_PRIORITY ? [{ key: "urgent", label: "Urgent" }] : []).concat(Model.PRIORITIES).map(p => ({ value: p.key, label: p.label, dot: Model.priorityDot(p.key), on: f.priorities.includes(p.key) }));
     if (key === "due") return DUE_CHOICES.map(([v, l]) => ({ value: v, label: l, on: f.due === v }));
-    if (key === "tags") return Model.allTags().map(tag => ({ value: tag, label: "#" + tag, on: f.tags.includes(tag) }));
+    if (key === "categories") {
+      active.forEach(t => counts.set(t.category || "", (counts.get(t.category || "") || 0) + 1));
+      return Model.CATEGORIES.map(c => c.key).concat("").filter(k => counts.has(k) || f.categories.includes(k))
+        .map(k => ({ value: k, label: k ? Model.categoryLabel(k) : "No category", count: counts.get(k) || 0, on: f.categories.includes(k) }));
+    }
     return [];
   }
   function toggleFilter(key, value) {
@@ -64,7 +72,7 @@
     persist();
   }
   function clearFilter(key) { const f = state.filters; if (Array.isArray(f[key])) f[key] = []; else f[key] = ""; persist(); }
-  const activeFilterCount = () => { const f = state.filters; return f.requesters.length + f.projects.length + f.statuses.length + f.priorities.length + f.tags.length + (f.due ? 1 : 0) + (f.self === true ? 1 : 0) + (f.hideSnoozed ? 1 : 0); };
+  const activeFilterCount = () => { const f = state.filters; return f.requesters.length + f.projects.length + f.categories.length + f.statuses.length + f.priorities.length + (f.due ? 1 : 0) + (f.self === true ? 1 : 0) + (f.hideSnoozed ? 1 : 0); };
 
   function openFilterMenu(btn, key, rerender) {
     const opts = filterOptions(key);
@@ -74,7 +82,7 @@
       onClick: () => { toggleFilter(key, o.value); rerender(); }
     }));
     if (key === "due") items.unshift({ label: "Any time", on: !state.filters.due, onClick: () => { clearFilter("due"); rerender(); } });
-    if (!items.length) items = [{ label: key === "tags" ? "No tags yet" : "Nothing to filter", onClick: () => {} }];
+    if (!items.length) items = [{ label: "Nothing to filter", onClick: () => {} }];
     if (opts.some(o => o.on)) items.push({ sep: true }, { label: "Clear this filter", icon: "x", onClick: () => { clearFilter(key); rerender(); } });
     App.menu.open(btn, items);
   }
@@ -88,7 +96,7 @@
       const f = state.filters;
       const chip = (key, o) => `<button type="button" class="chip ${o.on ? "on" : ""}" data-k="${key}" data-v="${esc(o.value)}">${o.swatch ? `<span class="swatch" style="background:${esc(o.swatch)}"></span>` : o.dot ? `<span class="swatch" style="background:${o.dot};border-radius:50%"></span>` : ""}${esc(o.label)}${o.count != null ? ` <span class="cnt">${o.count}</span>` : ""}</button>`;
       body.innerHTML = `
-        <div class="mf-row" ${state.mode === "calendar" ? "hidden" : ""}>
+        <div class="mf-row">
           <label class="field grow"><span class="label">Sort by</span><select class="select" data-sort>${Model.SORTS.map(o => `<option value="${o.key}" ${state.sort === o.key ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select></label>
           ${state.mode === "table" ? `<label class="field grow"><span class="label">Group by</span><select class="select" data-group>${Model.GROUPS.map(g => `<option value="${g.key}" ${state.group === g.key ? "selected" : ""}>${esc(g.label)}</option>`).join("")}</select></label>` : ""}
         </div>
@@ -136,135 +144,69 @@
 
   // ---------- table ----------
   const COLS = [
+    { key: "project", label: "Project", cls: "c-proj" },
     { key: "title", label: "Task", cls: "c-title" },
     { key: "requester", label: "Who asked", cls: "c-who" },
     { key: "next", label: "Next step", cls: "c-next" },
     { key: "due", label: "Due", cls: "c-due" },
-    { key: "project", label: "Project", cls: "c-proj" },
     { key: "status", label: "Status", cls: "c-status" },
     { key: "priority", label: "Priority", cls: "c-prio" }
   ];
-  function rowHtml(t) {
+  const canDrag = () => state.sort === "manual";
+  const dragHint = () => canDrag() ? "" : `<div class="drag-hint">${App.icon("grip", "xs")}To drag tasks into your own order, choose <button type="button" class="linkish" data-manual>Sort: My order</button></div>`;
+  function rowHtml(t, cols) {
     const n = Model.nextStep(t);
+    const cell = {
+      project: () => `<td class="c-proj">${Comp.projectTag(t.projectId) || `<span class="muted">—</span>`}</td>`,
+      title: () => `<td class="c-title"><div class="t">${esc(t.title || "Untitled")}</div><div class="tags">${Comp.categoryPill(t)}${Comp.snoozePill(t, true)}${Comp.followPill(t)}${Comp.extrasPills(t)}</div></td>`,
+      requester: () => `<td class="c-who">${Comp.who(t.requesterId)}</td>`,
+      next: () => `<td class="c-next">${n ? `<div class="n"><button type="button" class="mini-check" data-act="step" data-step="${esc(n.id)}" title="Mark step done">${App.icon("check")}</button><span>${esc(n.text)}</span></div>` : `<span class="muted">—</span>`}</td>`,
+      due: () => `<td class="c-due">${Comp.duePill(t, true)}</td>`,
+      status: () => `<td class="c-status">${Comp.statusPill(t, true)}</td>`,
+      priority: () => `<td class="c-prio">${Comp.prioPill(t, true)}</td>`
+    };
     return `<tr class="trow ${Model.isSnoozed(t) ? "snoozed" : ""}${Comp.selCls(t.id)}" data-task-id="${esc(t.id)}" tabindex="-1">
+      ${canDrag() ? `<td class="c-drag">${Comp.dragHandle()}</td>` : ""}
       <td class="c-check"><button type="button" class="check" data-act="toggle" title="Mark done (X)" aria-label="Mark done">${App.icon("check")}</button></td>
-      <td class="c-title"><div class="t">${esc(t.title || "Untitled")}</div><div class="tags">${Comp.snoozePill(t, true)}${Comp.followPill(t)}${Comp.extrasPills(t)}${Comp.tags(t)}</div></td>
-      <td class="c-who">${Comp.who(t.requesterId)}</td>
-      <td class="c-next">${n ? `<div class="n"><button type="button" class="mini-check" data-act="step" data-step="${esc(n.id)}" title="Mark step done">${App.icon("check")}</button><span>${esc(n.text)}</span></div>` : `<span class="muted">—</span>`}</td>
-      <td class="c-due">${Comp.duePill(t, true)}</td>
-      <td class="c-proj">${Comp.projectPill(t.projectId) || `<span class="muted">—</span>`}</td>
-      <td class="c-status">${Comp.statusPill(t, true)}</td>
-      <td class="c-prio">${Comp.prioPill(t, true)}</td>
+      ${cols.map(c => cell[c.key]()).join("")}
       <td style="width:36px;padding-left:0"><button type="button" class="icon-btn sm plain" data-act="more" aria-label="More">${App.icon("more")}</button></td>
     </tr>`;
   }
+  /** groups: [{ label, color?, dot?, tasks }]; opts.hideProject drops the Project column (By project view). */
+  function tableHtml(groups, opts) {
+    opts = opts || {};
+    const cols = COLS.filter(c => !(opts.hideProject && c.key === "project"));
+    const span = cols.length + 2 + (canDrag() ? 1 : 0);
+    const head = `<tr>${canDrag() ? `<th class="c-drag"></th>` : ""}<th class="c-check"></th>${cols.map(c => `<th class="${c.cls} sortable ${state.sort === c.key ? "sorted" : ""}" data-sort="${c.key}">${c.label} ${state.sort === c.key ? App.icon(state.dir === "desc" ? "up" : "down") : ""}</th>`).join("")}<th></th></tr>`;
+    const bodies = groups.map(g => `<tbody ${canDrag() ? "data-sortable" : ""}>${g.label && !opts.noGroupRows ? `<tr class="group-row"><td colspan="${span}">${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : g.dot ? `<span class="dot-sw" style="background:${g.dot};border-radius:50%;margin-right:6px"></span>` : ""}${esc(g.label)}<span class="count">${g.tasks.length}</span></td></tr>` : ""}${g.tasks.map(t => rowHtml(t, cols)).join("")}</tbody>`).join("");
+    return `<div class="table-wrap ${opts.flush ? "" : "mt-12"}"><table class="ttable ${opts.hideProject ? "no-proj" : ""}"><thead>${head}</thead>${bodies}</table></div>`;
+  }
+  const cardsHtml = (tasks, opts) => `<div class="list" ${canDrag() ? "data-sortable" : ""}>${tasks.map(t => Comp.taskCard(t, Object.assign({ drag: canDrag() }, opts))).join("")}</div>`;
   function renderTable(tasks) {
     const groups = Model.group(tasks, state.group);
     if (!App.isDesktop()) {
-      return groups.map(g => (g.label ? `<div class="section-head mt-16"><h2>${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : ""}${esc(g.label)}</h2><span class="count">${g.tasks.length}</span></div>` : "") +
-        `<div class="list ${g.label ? "" : "mt-12"}">${g.tasks.map(t => Comp.taskCard(t)).join("")}</div>`).join("");
+      return dragHint() + groups.map(g => (g.label ? `<div class="section-head mt-16"><h2>${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : ""}${esc(g.label)}</h2><span class="count">${g.tasks.length}</span></div>` : `<div class="mt-12"></div>`) + cardsHtml(g.tasks)).join("");
     }
-    const head = `<tr><th class="c-check"></th>${COLS.map(c => `<th class="${c.cls} sortable ${state.sort === c.key ? "sorted" : ""}" data-sort="${c.key}">${c.label} ${state.sort === c.key ? App.icon(state.dir === "desc" ? "up" : "down") : ""}</th>`).join("")}<th></th></tr>`;
-    const bodyRows = groups.map(g => (g.label ? `<tr class="group-row"><td colspan="${COLS.length + 2}">${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : g.dot ? `<span class="dot-sw" style="background:${g.dot};border-radius:50%;margin-right:6px"></span>` : ""}${esc(g.label)}<span class="count">${g.tasks.length}</span></td></tr>` : "") + g.tasks.map(rowHtml).join("")).join("");
-    return `<div class="table-wrap mt-12"><table class="ttable"><thead>${head}</thead><tbody>${bodyRows}</tbody></table></div>`;
+    return dragHint() + tableHtml(groups);
   }
 
-  // ---------- calendar ----------
-  let calMonth = App.today().slice(0, 7);   // "YYYY-MM" being shown
-  let calDay = App.today();                  // selected day (list under the grid)
-  const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-  /** Items per day: tasks due that day, plus follow-ups landing that day. */
-  function calendarItems(tasks) {
-    const byDay = new Map();
-    const add = (day, item) => { if (!byDay.has(day)) byDay.set(day, []); byDay.get(day).push(item); };
-    tasks.forEach(t => {
-      if (t.due) add(t.due, { kind: "due", t });
-      if (Model.isWaiting(t) && t.waiting && t.waiting.followUp && t.waiting.followUp !== t.due) add(t.waiting.followUp, { kind: "fu", t });
-    });
-    const smart = Model.comparator("smart");
-    byDay.forEach(list => list.sort((a, b) => (a.kind === b.kind ? smart(a.t, b.t) : a.kind === "due" ? -1 : 1)));
-    return byDay;
-  }
-
-  function renderCalendar(tasks) {
-    const byDay = calendarItems(tasks);
-    const [y, m] = calMonth.split("-").map(Number);
-    const first = App.toDateStr(new Date(y, m - 1, 1));
-    const gridStart = App.weekStart(first);
-    const today = App.today();
+  // ---------- by project ----------
+  function renderProjects(tasks) {
+    const groups = Model.group(tasks, "project");
     const desktop = App.isDesktop();
-    const undated = tasks.filter(t => !t.due).length;
-    let cells = "";
-    for (let i = 0; i < 42; i++) {
-      const day = App.addDays(i, gridStart);
-      if (i === 35 && day.slice(0, 7) !== calMonth) break; // 5 rows are enough this month
-      const items = byDay.get(day) || [];
-      const outside = day.slice(0, 7) !== calMonth;
-      const overdue = items.some(it => it.kind === "due" && day < today);
-      const chips = desktop
-        ? items.slice(0, 3).map(it => calChip(it, day < today)).join("") + (items.length > 3 ? `<div class="cal-more">+${items.length - 3} more</div>` : "")
-        : (items.length ? `<div class="cal-dots">${items.slice(0, 3).map(it => `<span class="${it.kind === "fu" ? "fu" : day < today ? "late" : "p-" + Model.effPriority(it.t).key}"></span>`).join("")}${items.length > 3 ? `<b>+${items.length - 3}</b>` : ""}</div>` : "");
-      cells += `<div class="cal-cell ${outside ? "outside" : ""} ${day === today ? "today" : ""} ${day === calDay ? "sel" : ""} ${overdue ? "has-late" : ""}" data-day="${day}" role="button" tabindex="0" aria-label="${esc(App.fmtDateLong(day))}, ${items.length} item${items.length === 1 ? "" : "s"}">
-        <div class="cal-num">${Number(day.slice(8))}</div>${chips}</div>`;
-    }
-    const sel = byDay.get(calDay) || [];
-    const selDue = sel.filter(it => it.kind === "due").map(it => it.t), selFu = sel.filter(it => it.kind === "fu").map(it => it.t);
-    return `<div class="cal mt-12">
-      <div class="cal-bar">
-        <button type="button" class="icon-btn sm" data-cal="-1" aria-label="Previous month">${App.icon("back")}</button>
-        <h2>${esc(new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" }))}</h2>
-        <button type="button" class="icon-btn sm" data-cal="1" aria-label="Next month">${App.icon("right")}</button>
-        <button type="button" class="btn xs ghost" data-cal-today>Today</button>
-        <span class="grow"></span>
-        ${undated ? `<span class="muted cal-note">${App.plural(undated, "task")} without a due date not shown</span>` : ""}
-      </div>
-      <div class="cal-grid">${WEEKDAYS.map(d => `<div class="cal-wd">${desktop ? d : d[0]}</div>`).join("")}${cells}</div>
-    </div>
-    <div class="cal-day">
-      <div class="section-head mt-16"><h2>${esc(calDay === today ? "Today · " + App.fmtDateLong(calDay) : App.fmtDateLong(calDay))}</h2><span class="count">${sel.length}</span>
-        <span class="right"><button type="button" class="btn xs ghost" data-cal-add>${App.icon("plus", "xs")}Add task due this day</button></span></div>
-      ${selDue.length ? `<div class="list">${selDue.map(t => Comp.taskCard(t)).join("")}</div>` : ""}
-      ${selFu.length ? `<div class="label mt-12" style="margin-bottom:8px">Follow-ups</div><div class="list">${selFu.map(t => Comp.taskCard(t)).join("")}</div>` : ""}
-      ${sel.length ? "" : Comp.emptyInline("Nothing due this day.")}
-    </div>`;
-  }
-  function calChip(it, past) {
-    const t = it.t;
-    const cls = it.kind === "fu" ? "fu" : past ? "late" : "p-" + Model.effPriority(t).key;
-    return `<div class="cal-chip ${cls}${Comp.selCls(t.id)}" data-task-id="${esc(t.id)}" data-kind="${it.kind}" draggable="true" title="${esc((it.kind === "fu" ? "Follow up: " : "") + t.title)}">${it.kind === "fu" ? App.icon("hourglass", "xs") : ""}<span>${esc(t.title || "Untitled")}</span></div>`;
-  }
-  function bindCalendar(panel, rerender) {
-    panel.querySelectorAll("[data-cal]").forEach(b => b.onclick = () => {
-      const [y, m] = calMonth.split("-").map(Number);
-      calMonth = App.toDateStr(new Date(y, m - 1 + Number(b.dataset.cal), 1)).slice(0, 7);
-      rerender();
-    });
-    panel.querySelector("[data-cal-today]").onclick = () => { calMonth = App.today().slice(0, 7); calDay = App.today(); rerender(); };
-    panel.querySelector("[data-cal-add]").onclick = () => global.Editor.quickAdd({ due: calDay });
-    panel.querySelectorAll(".cal-cell").forEach(c => {
-      const pick = () => { calDay = c.dataset.day; if (calDay.slice(0, 7) !== calMonth) calMonth = calDay.slice(0, 7); rerender(); };
-      c.addEventListener("click", e => { if (!e.target.closest(".cal-chip")) pick(); });
-      c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
-      c.addEventListener("dblclick", e => { if (!e.target.closest(".cal-chip")) global.Editor.quickAdd({ due: c.dataset.day }); });
-    });
-    // drag a chip to another day to move its due date (or follow-up date)
-    let drag = null;
-    panel.querySelectorAll(".cal-chip").forEach(ch => {
-      ch.addEventListener("dragstart", e => { drag = { id: ch.dataset.taskId, kind: ch.dataset.kind }; ch.classList.add("dragging"); try { e.dataTransfer.setData("text/plain", drag.id); } catch (err) { /* ignore */ } e.dataTransfer.effectAllowed = "move"; });
-      ch.addEventListener("dragend", () => { ch.classList.remove("dragging"); panel.querySelectorAll(".drop-hover").forEach(x => x.classList.remove("drop-hover")); });
-    });
-    panel.querySelectorAll(".cal-cell").forEach(c => {
-      c.addEventListener("dragover", e => { if (drag) { e.preventDefault(); c.classList.add("drop-hover"); } });
-      c.addEventListener("dragleave", () => c.classList.remove("drop-hover"));
-      c.addEventListener("drop", e => {
-        e.preventDefault(); c.classList.remove("drop-hover");
-        if (!drag) return;
-        const t = Store.tasks.get(drag.id); const day = c.dataset.day; const kind = drag.kind; drag = null;
-        if (!t) return;
-        if (kind === "fu") Actions.setFollowUp(t, day); else if (t.due !== day) Actions.setDue(t, day);
-      });
-    });
+    return dragHint() + groups.map(g => {
+      const p = g.key ? Model.project(g.key) : null;
+      const head = `<div class="proj-head" style="--pc:${esc(p ? p.color : "var(--text-3)")}">
+        <span class="bar"></span>
+        <div class="grow">
+          <h2>${p ? `<a href="#projects/${encodeURIComponent(p.id)}">${esc(p.name)}</a>` : "No project"}</h2>
+          ${p && p.description ? `<div class="pdesc">${esc(p.description)}</div>` : ""}
+        </div>
+        <span class="count">${g.tasks.length}</span>
+        <button type="button" class="icon-btn sm plain" data-add-to="${esc(g.key)}" title="Add a task to ${esc(p ? p.name : "no project")}" aria-label="Add task">${App.icon("plus")}</button>
+      </div>`;
+      return `<section class="proj-group">${head}${desktop ? tableHtml([{ label: "", tasks: g.tasks }], { hideProject: true, flush: true }) : cardsHtml(g.tasks, { hideProject: true })}</section>`;
+    }).join("");
   }
 
   // ---------- render ----------
@@ -272,7 +214,7 @@
     render(panel, params) {
       const f = state.filters;
       const tasks = filtered().sort(Model.comparator(state.sort, state.dir));
-      const anyFilter = query || f.requesters.length || f.projects.length || f.statuses.length || f.priorities.length || f.tags.length || f.self !== null || f.due || f.hideSnoozed;
+      const anyFilter = query || f.requesters.length || f.projects.length || f.categories.length || f.statuses.length || f.priorities.length || f.self !== null || f.due || f.hideSnoozed;
       const hadFocus = document.activeElement && document.activeElement.id === "taskSearch";
       const caret = hadFocus ? document.activeElement.selectionStart : null;
       const rerender = () => Views.tasks.render(panel);
@@ -291,7 +233,7 @@
             <div class="seg view-seg" role="tablist" title="Switch view (T)">
               <button type="button" data-mode="today" class="${isToday ? "on" : ""}">${App.icon("sun", "sm")}<span>Today</span></button>
               <button type="button" data-mode="table" class="${state.mode === "table" ? "on" : ""}">${App.icon(App.isDesktop() ? "table" : "list", "sm")}<span>${App.isDesktop() ? "Table" : "List"}</span></button>
-              <button type="button" data-mode="calendar" class="${state.mode === "calendar" ? "on" : ""}">${App.icon("calendar", "sm")}<span>Calendar</span></button>
+              <button type="button" data-mode="projects" class="${state.mode === "projects" ? "on" : ""}">${App.icon("folder", "sm")}<span>${App.isDesktop() ? "By project" : "Projects"}</span></button>
             </div>
             <button class="btn sm primary" type="button" data-new>${App.icon("plus", "sm")}New</button>
           </div>
@@ -307,6 +249,7 @@
       if (isToday) {
         panel.innerHTML = head + `<div data-today></div>`;
         Comp.bindTasks(panel);
+        Comp.bindReorder(panel);
         bindHead();
         Views.today.renderInto(panel.querySelector("[data-today]"), rerender);
         return;
@@ -317,26 +260,28 @@
         ? `${searchOpen || query ? `<div class="toolbar">${searchBox}</div>` : ""}${activeChipsHtml()}<div class="m-gap"></div>`
         : `<div class="toolbar">
           ${searchBox}
-          ${state.mode === "calendar" ? "" : `<label class="sort-ctl">Sort <select class="select" data-sort-select>${Model.SORTS.map(s => `<option value="${s.key}" ${state.sort === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select></label>`}
+          ${`<label class="sort-ctl">Sort <select class="select" data-sort-select>${Model.SORTS.map(s => `<option value="${s.key}" ${state.sort === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select></label>`}
           ${state.mode === "table" ? `<label class="sort-ctl">Group <select class="select" data-group-select>${Model.GROUPS.map(g => `<option value="${g.key}" ${state.group === g.key ? "selected" : ""}>${esc(g.label)}</option>`).join("")}</select></label>` : ""}
         </div>
         <div class="filter-row">
           ${filterChip("Who asked", f.requesters, id => id ? Model.personName(id) || "?" : "None", "requesters")}
           ${filterChip("Project", f.projects, id => id ? Model.projectName(id) || "?" : "None", "projects")}
+          ${filterChip("Category", f.categories, k => k ? Model.categoryLabel(k) : "None", "categories")}
           ${state.mode === "table" ? filterChip("Status", f.statuses, k => Model.status(k).short || Model.status(k).label, "statuses") : ""}
           ${filterChip("Priority", f.priorities, k => k === "urgent" ? "Urgent" : Model.priority(k).label, "priorities")}
           ${filterChip("Due", f.due ? [f.due] : [], v => ({ overdue: "Overdue", today: "Today", week: "This week", next: "Next 2 wks", later: "Later", none: "None" }[v]), "due")}
-          ${filterChip("Tag", f.tags, v => "#" + v, "tags")}
           <button type="button" class="chip ${f.self === true ? "on" : ""}" data-self>${App.icon("me", "xs")}Self-assigned</button>
           <button type="button" class="chip ${f.hideSnoozed ? "on" : ""}" data-hide-snoozed title="Hide tasks with a future “not until” date">${App.icon("moon", "xs")}Hide snoozed</button>
           ${anyFilter ? `<button type="button" class="btn xs ghost" data-clear>${App.icon("x", "xs")}Clear all</button>` : ""}
         </div>`;
 
       panel.innerHTML = head + controls + `
-        ${state.mode === "calendar" ? renderCalendar(tasks) : tasks.length ? renderTable(tasks) :
+        ${!tasks.length ? "" : state.mode === "projects" ? renderProjects(tasks) : renderTable(tasks)}
+        ${tasks.length ? "" :
           `<div class="empty"><div class="big">${anyFilter ? "🔍" : "🗂️"}</div><h3>${anyFilter ? "No matching tasks" : "No open tasks"}</h3><p>${anyFilter ? "Try clearing a filter." : "Press N to add one."}</p></div>`}
       `;
       Comp.bindTasks(panel);
+      Comp.bindReorder(panel);
       bindHead();
       const search = panel.querySelector("#taskSearch");
       if (search) {
@@ -360,17 +305,18 @@
         if (state.sort === th.dataset.sort) state.dir = state.dir === "asc" ? "desc" : "asc"; else { state.sort = th.dataset.sort; state.dir = "asc"; }
         persist(); rerender();
       });
-      if (state.mode === "calendar") bindCalendar(panel, rerender);
+      panel.querySelectorAll("[data-add-to]").forEach(b => b.onclick = () => global.Editor.quickAdd({ projectId: b.dataset.addTo }));
+      const man = panel.querySelector("[data-manual]"); if (man) man.onclick = () => { state.sort = "manual"; state.dir = "asc"; persist(); rerender(); };
     },
     focusSearch(panel) {
       searchOpen = true;
-      if (state.mode === "today") state.mode = "table"; // search lives in Table/Calendar
+      if (state.mode === "today") state.mode = "table"; // search lives in Table / By project
       persist(); Views.tasks.render(panel);
       const s = panel.querySelector("#taskSearch"); if (s) { s.focus(); s.select(); }
     },
-    /** Switch to a mode, or cycle Today → Table → Calendar. */
+    /** Switch to a mode, or cycle Today → Table → By project. */
     setMode(panel, mode) {
-      const order = ["today", "table", "calendar"];
+      const order = ["today", "table", "projects"];
       state.mode = mode || order[(order.indexOf(state.mode) + 1) % order.length];
       persist(); Views.tasks.render(panel);
     }

@@ -88,7 +88,6 @@
     const asked = all.filter(t => t.requesterId === id && Model.isActive(t)).sort(smart);
     const waiting = isMe ? [] : all.filter(t => Model.isWaiting(t) && t.waiting && t.waiting.personId === id).sort(smart);
     const done = all.filter(t => t.requesterId === id && !Model.isActive(t)).sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || "")).slice(0, 20);
-    const hours = asked.reduce((s, t) => s + (t.estimate || 0), 0);
     panel.innerHTML = `
       <a class="back-link" href="#people">${App.icon("back", "sm")}People</a>
       <div class="detail-head">
@@ -98,7 +97,7 @@
         <button class="btn sm primary" type="button" data-new>${App.icon("plus", "sm")}${isMe ? "New" : "New ask"}</button>
       </div>
       ${p.notes ? `<p class="mt-8" style="color:var(--text-2);font-size:.9rem;white-space:pre-wrap">${esc(p.notes)}</p>` : ""}
-      ${Comp.section({ title: isMe ? "Open" : `Asked of you`, count: asked.length, right: hours ? `<span class="muted" style="font-size:.8rem">≈ ${Comp.fmtHours(hours)} estimated</span>` : "", body: asked.length ? `<div class="list">${asked.map(t => Comp.taskCard(t, { hideRequester: true })).join("")}</div>` : Comp.emptyInline("Nothing open.") })}
+      ${Comp.section({ title: isMe ? "Open" : `Asked of you`, count: asked.length, body: asked.length ? `<div class="list">${asked.map(t => Comp.taskCard(t, { hideRequester: true })).join("")}</div>` : Comp.emptyInline("Nothing open.") })}
       ${isMe ? "" : Comp.section({ title: "You're waiting on them", tone: "orange", count: waiting.length, body: waiting.length ? `<div class="list">${waiting.map(t => Comp.taskCard(t)).join("")}</div>` : Comp.emptyInline("Not waiting on them for anything.") })}
       ${done.length ? Comp.section({ title: "Recently finished", count: done.length, body: `<div class="list">${done.map(t => Comp.taskCard(t, { hideRequester: true, compact: true })).join("")}</div>` }) : ""}
       ${(() => { const notes = global.Meetings ? global.Meetings.forPerson(id).slice(0, 8) : []; return notes.length && !isMe ? Comp.section({ title: "Meetings", count: notes.length, body: `<div class="mlist">${notes.map(global.Meetings.rowHtml).join("")}</div>` }) : ""; })()}

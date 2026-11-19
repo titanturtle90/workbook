@@ -9,17 +9,16 @@
   const iso2date = iso => iso ? App.isoToDateStr(iso) : "";
 
   Exporter.csv = (includeFinished) => {
-    const header = ["Task", "Who Asked", "Next Step", "All Steps", "Due", "Project", "Status", "Priority", "Effective Priority", "Waiting On / Follow Up With", "Follow Up", "Follow-up Note", "Estimate (h)", "Tags", "Repeats", "Came In Via", "Created", "Completed", "Details", "Links", "Latest Note"];
-    const tasks = [...Store.tasks.values()].filter(t => includeFinished || Model.isActive(t)).sort(Model.comparator("smart"));
+    const header = ["Project", "Task", "Category", "Who Asked", "Next Step", "All Steps", "Due", "Not Until", "Status", "Priority", "Waiting On / Follow Up With", "Follow Up", "Follow-up Note", "Came In Via", "Created", "Completed", "Details", "Files & Links", "Latest Note"];
+    const tasks = [...Store.tasks.values()].filter(t => includeFinished || Model.isActive(t)).sort(Model.comparator("manual"));
     const rows = tasks.map(t => {
       const notes = (t.log || []).filter(l => !l.auto);
       return [
-        t.title, Model.requesterName(t), Model.nextStep(t)?.text || "",
+        Model.projectName(t.projectId), t.title, Model.categoryLabel(t.category), Model.requesterName(t), Model.nextStep(t)?.text || "",
         (t.steps || []).map(s => (s.done ? "[x] " : "[ ] ") + s.text).join("\n"),
-        t.due, Model.projectName(t.projectId), Model.status(t.status).label, Model.priority(t.priority).label, Model.effPriority(t).label,
-        Model.personName(t.waiting?.personId), t.waiting?.followUp || "", t.waiting?.note || "", t.estimate ?? "", (t.tags || []).join(", "),
-        t.recurrence ? Model.recurrence(t.recurrence).label : "", Model.source(t.source)?.label || "",
-        iso2date(t.createdAt), iso2date(t.completedAt), t.details || "", (t.links || []).map(l => l.url).join("\n"),
+        t.due, t.startDate || "", Model.status(t.status).label, Model.priority(t.priority).label,
+        Model.personName(t.waiting?.personId), t.waiting?.followUp || "", t.waiting?.note || "", Model.source(t.source)?.label || "",
+        iso2date(t.createdAt), iso2date(t.completedAt), t.details || "", (t.links || []).map(l => l.path || l.url).join("\n"),
         notes.length ? notes[notes.length - 1].text : ""
       ];
     });

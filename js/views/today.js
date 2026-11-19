@@ -22,12 +22,9 @@
       else if (t.status === "new") b.triage.push(t);
       else b.later.push(t);
     });
-    const smart = Model.comparator("smart");
-    Object.values(b).forEach(list => list.sort(smart));
-    b.week.sort(Model.comparator("due"));
+    // Each section follows your drag-and-drop order (tasks you haven't placed fall back to priority + due date).
+    Object.values(b).forEach(list => list.sort(Model.manualCompare));
     b.snoozed.sort((x, y) => x.startDate.localeCompare(y.startDate));
-    b.followup.sort((x, y) => (x.waiting.followUp || "").localeCompare(y.waiting.followUp || ""));
-    b.waiting.sort((x, y) => (x.waiting?.followUp || "9999").localeCompare(y.waiting?.followUp || "9999"));
     return b;
   };
 
@@ -46,10 +43,10 @@
       const allFollow = [...Store.tasks.values()].filter(Model.followUpDue).length;
       const weekCount = b.week.length + b.today.length;
       const col = collapsed();
-      const list = (tasks, opts) => tasks.length ? `<div class="list">${tasks.map(t => Comp.taskCard(t, opts)).join("")}</div>` : "";
-      const sec = (id, title, tone, tasks, empty, opts) => (tasks.length || empty) ? Comp.section({
+      const list = (tasks, drag) => tasks.length ? `<div class="list" ${drag ? "data-sortable" : ""}>${tasks.map(t => Comp.taskCard(t, { drag })).join("")}</div>` : "";
+      const sec = (id, title, tone, tasks, empty) => (tasks.length || empty) ? Comp.section({
         id, title, tone, count: tasks.length, collapsible: true, collapsed: !!col[id],
-        body: tasks.length ? list(tasks, opts) : Comp.emptyInline(empty)
+        body: tasks.length ? list(tasks, id !== "snoozed") : Comp.emptyInline(empty)
       }) : "";
       const activeCount = [...Store.tasks.values()].filter(Model.isActive).length;
 

@@ -23,26 +23,10 @@
     t.status = "done";
     t.completedAt = new Date().toISOString();
     Actions.addLog(t, "Marked done", true);
-    let spawned = null;
-    if (t.recurrence) {
-      spawned = Model.newTask({
-        title: t.title, details: t.details, requesterId: t.requesterId, projectId: t.projectId,
-        priority: t.priority, tags: (t.tags || []).slice(), links: (t.links || []).slice(), estimate: t.estimate,
-        recurrence: t.recurrence, source: t.source, status: "not_started",
-        due: Model.nextOccurrence(t),
-        steps: (t.steps || []).map(s => ({ id: App.genId(), text: s.text, done: false })),
-        log: [Actions.logEntry("Repeating task — created when the previous one was finished", true)]
-      });
-      t.recurrence = ""; // the finished copy no longer repeats; the new one carries the rule
-    }
+    t.recurrence = ""; // repeating tasks were retired; a finished task never spawns a copy
     Actions.save(t);
-    if (spawned) Store.save("tasks", spawned);
-    if (!(opts && opts.quiet)) {
-      App.toast(spawned ? `Done · next one due ${App.fmtDateLong(spawned.due)}` : "Done — nice work", {
-        label: "Undo", onClick: () => { Store.save("tasks", before); if (spawned) Store.remove("tasks", spawned.id); }
-      });
-    }
-    return spawned;
+    if (!(opts && opts.quiet)) App.toast("Done — nice work", { label: "Undo", onClick: () => Store.save("tasks", before) });
+    return null;
   };
 
   Actions.reopen = task => {
@@ -199,6 +183,23 @@
     paint();
   };
 
+  /**
+   * Saves a new manual order. `ids` is the arranged order of one visible list; every other open task keeps
+   * its place relative to them, then all open tasks are renumbered 1, 2, 3…
+   */
+  Actions.reorder = ids => {
+    if (!ids.length) return;
+    const moved = new Set(ids);
+    const all = [...Store.tasks.values()].filter(Model.isActive).sort(Model.manualCompare);
+    // put the arranged list back into the slots its tasks occupied
+    const slots = all.map((t, i) => (moved.has(t.id) ? i : -1)).filter(i => i >= 0);
+    const result = all.slice();
+    slots.forEach((slot, k) => { result[slot] = Store.tasks.get(ids[k]); });
+    const changed = [];
+    result.forEach((t, i) => { if (t && t.order !== i + 1) changed.push(Object.assign(copy(t), { order: i + 1 })); });
+    if (changed.length) Store.saveMany("tasks", changed);
+  };
+
   Actions.duplicate = task => {
     const t = Model.newTask(Object.assign(copy(task), {
       id: App.genId(), title: task.title + " (copy)", status: "not_started", completedAt: "",
@@ -328,15 +329,30 @@
     let h = "";
     const sp = Model.stepProgress(t);
     if (sp.total) h += `<span class="pill gray" title="Steps done">${App.icon("check")}${sp.done}/${sp.total}</span>`;
-    if (t.recurrence) h += `<span class="pill gray" title="${esc(Model.recurrence(t.recurrence).label)}">${App.icon("repeat")}</span>`;
     if (t.shots && t.shots.length) h += `<span class="pill gray btnish" data-act="shot" title="View screenshot">${App.icon("image")}${t.shots.length}</span>`;
-    if (t.links && t.links.length) h += `<span class="pill gray" title="Links">${App.icon("link")}${t.links.length}</span>`;
-    if (t.estimate) h += `<span class="pill gray" title="Estimate">${App.icon("clock")}${esc(fmtHours(t.estimate))}</span>`;
+    const links = t.links || [];
+    const files = links.filter(l => l.path);
+    if (files.length) h += `<span class="pill gray btnish" data-act="copy-path" title="Copy file path: ${esc(files[0].path)}">${App.icon("folder")}${files.length > 1 ? files.length : "File"}</span>`;
+    if (links.length > files.length) h += `<span class="pill gray" title="Links">${App.icon("link")}${links.length - files.length}</span>`;
     return h;
+  };
+  /** Category (RFI, Submittal, PO…) as a small label. */
+  Comp.categoryPill = t => {
+    const c = Model.category(t.category);
+    return c ? `<span class="pill cat" title="Category">${esc(c.label)}</span>` : "";
+  };
+  /** The project name that sits in front of a task's title. */
+  Comp.projectTag = projectId => {
+    const p = Model.project(projectId);
+    return p ? `<span class="t-proj" style="--pc:${esc(p.color)}" title="Project">${esc(p.name)}</span>` : "";
+  };
+  /** Copies a file path (browsers can't open local/network files from a web page, so paste it into File Explorer). */
+  Comp.copyPath = async path => {
+    try { await navigator.clipboard.writeText(path); App.toast("File path copied · paste it into File Explorer"); }
+    catch (e) { App.toast("Couldn't copy · select the path and copy it"); }
   };
   const fmtHours = h => h < 1 ? `${Math.round(h * 60)}m` : `${Number(h.toFixed(1))}h`;
   Comp.fmtHours = fmtHours;
-  Comp.tags = t => (t.tags || []).map(tag => `<span class="tag">#${esc(tag)}</span>`).join(" ");
 
   Comp.nextStepLine = (t, opts) => {
     const n = Model.nextStep(t);
@@ -345,7 +361,7 @@
     return `<div class="next"><button type="button" class="mini-check" data-act="step" data-step="${esc(n.id)}" title="Mark this step done" aria-label="Mark step done">${App.icon("check")}</button><span>${esc(n.text)}</span></div>`;
   };
 
-  /** A task card for lists. opts: { hideRequester, hideProject, compact } */
+  /** A task card for lists. opts: { hideRequester, hideProject, compact, drag } */
   Comp.taskCard = (t, opts) => {
     opts = opts || {};
     const active = Model.isActive(t);
@@ -354,20 +370,20 @@
       ${active ? `<span class="prio-bar prio-${prio.key}"></span>` : ""}
       <button type="button" class="check ${active ? "" : "on"}" data-act="toggle" aria-label="${active ? "Mark done" : "Reopen"}" title="${active ? "Mark done (X)" : "Reopen"}">${App.icon("check")}</button>
       <div class="body">
-        <div class="title">${esc(t.title || "Untitled")}</div>
+        <div class="title">${opts.hideProject ? "" : Comp.projectTag(t.projectId)}${esc(t.title || "Untitled")}</div>
         ${Comp.nextStepLine(t)}
         <div class="meta">
           ${opts.hideRequester ? "" : (t.requesterId ? `<span class="who">${Comp.avatar(t.requesterId)}${esc(Model.requesterName(t))}</span>` : "")}
           ${Comp.duePill(t, active)}
           ${active ? Comp.statusPill(t, true) : `<span class="pill st ${t.status === "cancelled" ? "st-cancelled" : "st-done"}">${App.icon("check")}${esc(t.status === "cancelled" ? "Cancelled" : "Done " + (t.completedAt ? App.fmtIso(t.completedAt) : ""))}</span>`}
           ${active ? Comp.prioPill(t, false) : ""}
-          ${opts.hideProject ? "" : Comp.projectPill(t.projectId)}
+          ${Comp.categoryPill(t)}
           ${active ? Comp.snoozePill(t, true) : ""}
           ${active ? Comp.followPill(t) : ""}
           ${opts.compact ? "" : Comp.extrasPills(t)}
-          ${opts.compact ? "" : Comp.tags(t)}
         </div>
       </div>
+      ${opts.drag && active ? Comp.dragHandle() : ""}
     </div>`;
   };
 
@@ -395,6 +411,8 @@
       if (act === "due") { Actions.dueMenu(actEl, t); return; }
       if (act === "snooze") { Actions.snoozeMenu(actEl, t); return; }
       if (act === "more") { Actions.moreMenu(actEl, t); return; }
+      if (act === "copy-path") { const f = (t.links || []).find(l => l.path); if (f) Comp.copyPath(f.path); return; }
+      if (act === "drag") return;
       if (act === "shot") { if (t.shots && t.shots[0]) global.Shots.view(t.shots[0].id); return; }
       if (e.target.closest("a")) return;
       global.Editor.open(t.id);
@@ -425,7 +443,7 @@
     };
     root.addEventListener("touchstart", e => {
       const card = e.target.closest(".tcard");
-      if (!card || !root.contains(card) || e.touches.length > 1) return;
+      if (!card || !root.contains(card) || e.touches.length > 1 || e.target.closest(".drag-handle")) return;
       if ((global.Bulk && global.Bulk.active) || !Model.isActive(Store.tasks.get(card.dataset.taskId) || {})) return;
       s = { card, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, mode: null, bg: null };
     }, { passive: true });
@@ -471,6 +489,69 @@
     };
     root.addEventListener("touchend", end, { passive: true });
     root.addEventListener("touchcancel", () => { if (s && s.mode === "swipe") reset(); else s = null; }, { passive: true });
+  };
+
+  Comp.dragHandle = () => `<button type="button" class="drag-handle" data-act="drag" aria-label="Drag to reorder" title="Drag to reorder">${App.icon("grip")}</button>`;
+
+  /**
+   * Drag-and-drop ordering (mouse and touch) for lists of tasks.
+   * Any element inside `root` with [data-sortable] holds draggable items ([data-task-id] with a .drag-handle);
+   * items only move within their own [data-sortable] list. Dropping renumbers your order.
+   */
+  Comp.bindReorder = root => {
+    if (root._wbReorder) return;
+    root._wbReorder = true;
+    let d = null;
+    const itemsOf = list => [...list.children].filter(el => el.matches("[data-task-id]"));
+    root.addEventListener("pointerdown", e => {
+      const h = e.target.closest(".drag-handle");
+      if (!h || !root.contains(h) || (e.pointerType === "mouse" && e.button !== 0)) return;
+      const item = h.closest("[data-task-id]"), list = item && item.closest("[data-sortable]");
+      if (!list) return;
+      e.preventDefault();
+      const r = item.getBoundingClientRect();
+      const ghost = item.cloneNode(true);
+      ghost.classList.add("drag-ghost");
+      if (item.tagName === "TR") { // a lone <tr> needs a table around it to keep its columns
+        const tbl = document.createElement("table"); tbl.className = item.closest("table").className + " drag-ghost";
+        const tb = document.createElement("tbody"); tb.appendChild(ghost); tbl.appendChild(tb);
+        [...item.children].forEach((td, i) => { ghost.children[i].style.width = td.getBoundingClientRect().width + "px"; });
+        ghost.classList.remove("drag-ghost");
+        d = { ghost: tbl };
+      } else d = { ghost };
+      Object.assign(d.ghost.style, { position: "fixed", left: r.left + "px", top: r.top + "px", width: r.width + "px", zIndex: 400, pointerEvents: "none" });
+      document.body.appendChild(d.ghost);
+      item.classList.add("drag-src");
+      document.body.classList.add("reordering");
+      Object.assign(d, { item, list, id: item.dataset.taskId, offY: e.clientY - r.top, pid: e.pointerId, moved: false });
+      try { h.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    });
+    const move = e => {
+      if (!d || e.pointerId !== d.pid) return;
+      d.moved = true;
+      d.ghost.style.top = (e.clientY - d.offY) + "px";
+      const others = itemsOf(d.list).filter(el => el !== d.item);
+      const before = others.find(el => { const b = el.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
+      if (before) { if (d.item.nextElementSibling !== before) d.list.insertBefore(d.item, before); }
+      else { const last = others[others.length - 1]; if (last && last.nextElementSibling !== d.item) last.after(d.item); }
+      // keep the list scrolling while you drag near the edges of the screen
+      const edge = 70;
+      if (e.clientY < edge) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - edge) window.scrollBy(0, 12);
+    };
+    const end = e => {
+      if (!d || (e && e.pointerId !== d.pid)) return;
+      const { item, list, ghost, moved } = d;
+      d = null;
+      ghost.remove();
+      item.classList.remove("drag-src");
+      document.body.classList.remove("reordering");
+      root._suppressClick = Date.now();
+      if (!moved) return;
+      Actions.reorder(itemsOf(list).map(el => el.dataset.taskId));
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", end);
+    document.addEventListener("pointercancel", end);
   };
 
   /** " selected" when the task is part of a bulk selection (keeps highlights across re-renders). */

@@ -34,14 +34,10 @@
       const triage = active.filter(t => t.status === "new");
       const nextMon = App.addDays(7, wk), nextSun = App.addDays(13, wk);
       const nextWeek = active.filter(t => t.due && t.due >= nextMon && t.due <= nextSun).sort(Model.comparator("due"));
-      const capacity = Number(Store.setting("weeklyCapacity", 30)) || 30;
-      const load = nextWeek.reduce((s, t) => s + (t.estimate || 0), 0);
-      const unestimated = nextWeek.filter(t => !t.estimate).length;
       const last = Store.setting("lastReview", "");
       const reviewedThisWeek = last && last >= wk;
       const step = (n, title, sub, body) => `<div class="review-step"><div class="rs-head"><span class="num">${n}</span><div class="grow"><h3>${esc(title)}</h3><div class="sub">${sub}</div></div></div>${body}</div>`;
       const none = msg => `<div class="muted" style="font-size:.86rem">${esc(msg)}</div>`;
-      const loadPct = Math.min(100, Math.round(100 * load / capacity));
 
       panel.innerHTML = `
         <div class="page-head">
@@ -55,10 +51,7 @@
         ${triage.length ? step(5, "New asks to triage", "Set a status, priority, and due date", triage.map(t => item(t, btn("start", "Start") + btn("open", "Open", "ghost"))).join("")) : ""}
         ${step(triage.length ? 6 : 5, "Gone quiet", "Untouched for 2+ weeks: still relevant?", stale.length ? stale.slice(0, 25).map(t => item(t, btn("open", "Open") + btn("done", "Done", "ghost") + btn("cancel", "Drop", "ghost"), `last touched ${esc(App.relative(t.updatedAt || t.createdAt))}`)).join("") : none("Nothing has gone stale."))}
         ${step(triage.length ? 7 : 6, "Next week", `${App.plural(nextWeek.length, "task")} due ${esc(App.fmtDate(nextMon))} – ${esc(App.fmtDate(nextSun))}`, `
-          <div class="row"><span style="font-size:.86rem"><b>${Comp.fmtHours(load || 0)}</b> estimated of ${capacity}h capacity${unestimated ? ` · ${unestimated} without an estimate` : ""}</span><span class="grow"></span><button type="button" class="btn xs ghost" data-capacity>Change capacity</button></div>
-          <div class="load-bar"><div style="width:${loadPct}%;background:${load > capacity ? "var(--red)" : load > capacity * 0.8 ? "var(--orange)" : "var(--green)"}"></div></div>
-          ${load > capacity ? `<p class="mt-8" style="color:var(--red);font-size:.86rem">Over capacity. Consider moving or delegating something.</p>` : ""}
-          <div class="mt-8">${nextWeek.length ? nextWeek.map(t => item(t, btn("open", "Open", "ghost"), `${esc(App.fmtDateLong(t.due))}${t.estimate ? " · " + Comp.fmtHours(t.estimate) : ""} · ${esc(Model.requesterName(t) || "")}`)).join("") : none("Nothing due next week yet.")}</div>`)}
+          <div>${nextWeek.length ? nextWeek.map(t => item(t, btn("open", "Open", "ghost"), `${esc(App.fmtDateLong(t.due))} · ${esc(Model.requesterName(t) || "")}`)).join("") : none("Nothing due next week yet.")}</div>`)}
       `;
 
       panel.onclick = e => {
@@ -78,7 +71,6 @@
         else if (r === "open") global.Editor.open(t.id);
       };
       panel.querySelector("[data-finish]").onclick = () => { Store.setSetting("lastReview", today); App.toast("Review done. Have a good weekend!"); };
-      panel.querySelector("[data-capacity]").onclick = () => global.Settings.open();
     }
   };
 })(window);
