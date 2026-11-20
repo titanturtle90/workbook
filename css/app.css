@@ -749,8 +749,9 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 }
 .ttable .c-cat { white-space: nowrap; width: 1%; }
 .ttable .c-cat .t-cat { margin-right: 0; max-width: 130px; }
-.chip.add-cat { border-style: dashed; color: var(--text-3); }
-.cat-new { width: 160px; min-height: 32px; padding: 4px 10px; font-size: 0.85rem; }
+.cat-pick .select { max-width: 320px; }
+.cat-new-row { gap: 8px; max-width: 420px; }
+.cat-new-row .input { flex: 1; }
 .catman-list { display: flex; flex-direction: column; gap: 6px; }
 .catman-row { display: flex; align-items: center; gap: 4px; }
 .catman-row .input { flex: 1; min-height: 38px; }

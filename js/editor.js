@@ -46,25 +46,29 @@
           <div class="quick-dates">${quickDateChips("data-date")}</div>`;
   const startInner = value => `<div class="row"><input class="input" type="date" name="startDate" value="${esc(value || "")}" style="max-width:200px"></div>
           <div class="quick-dates">${snoozeChips("data-start")}</div>`;
-  const catChipsInner = sel => Model.categories().map(c => `<button type="button" class="chip ${sel === c.key ? "on" : ""}" data-v="${esc(c.key)}">${esc(c.label)}</button>`).join("") +
-    `<button type="button" class="chip add-cat" data-cat-add title="Add a category to your list">${App.icon("plus", "xs")}New</button>`;
-  const categoryChips = sel => `<div class="chips cat-chips" data-cat>${catChipsInner(sel)}</div>`;
+  const NEW_CAT = "__new";
+  const catOptions = sel => `<option value="">— No category —</option>` +
+    Model.categories().map(c => `<option value="${esc(c.key)}" ${sel === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("") +
+    `<option value="${NEW_CAT}">+ New category…</option>`;
+  const categoryChips = sel => `<div class="cat-pick" data-cat><select class="select" name="category" aria-label="Category">${catOptions(sel)}</select></div>`;
   /**
-   * Category chips: tap to pick, tap again to clear; "+ New" adds a category to your list right here.
+   * Category drop-down. "+ New category…" swaps in a text box: type a name and press Enter to add it to your list.
    * get() returns the current key; set(key) stores it.
    */
   function bindCategoryChips(box, get, set) {
-    const mark = () => box.querySelectorAll("[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === (get() || "")));
-    box.addEventListener("click", e => {
-      const b = e.target.closest("[data-v]");
-      if (b) { set(get() === b.dataset.v ? "" : b.dataset.v); mark(); return; }
-      const add = e.target.closest("[data-cat-add]"); if (!add) return;
-      const inp = App.el(`<input class="input cat-new" placeholder="New category" aria-label="New category name" autocomplete="off">`);
-      add.replaceWith(inp); inp.focus();
+    const sel = () => box.querySelector("select");
+    const mark = () => { const s = sel(); if (s && document.activeElement !== s) s.value = get() || ""; };
+    const render = () => { box.innerHTML = `<select class="select" name="category" aria-label="Category">${catOptions(get() || "")}</select>`; };
+    box.addEventListener("change", e => {
+      if (!e.target.matches("select")) return;
+      if (e.target.value !== NEW_CAT) { set(e.target.value); return; }
+      const inp = App.el(`<div class="row cat-new-row"><input class="input cat-new" placeholder="New category name" aria-label="New category name" autocomplete="off"><button type="button" class="btn sm" data-cat-ok>Add</button><button type="button" class="btn sm ghost" data-cat-cancel>Cancel</button></div>`);
+      box.innerHTML = ""; box.appendChild(inp);
+      const input = inp.querySelector("input"); input.focus();
       let done = false;
       const finish = keep => {
         if (done) return; done = true;
-        const label = inp.value.trim();
+        const label = input.value.trim();
         let key = "";
         if (keep && label) {
           const list = Model.categories().slice();
@@ -72,15 +76,19 @@
           if (found) key = found.key;
           else { key = App.genId(); list.push({ key, label }); Store.setSetting("categories", list); App.toast(`Added “${label}” to your categories`); }
         }
-        box.innerHTML = catChipsInner(key || get());
         if (key) set(key);
-        mark();
+        render();
       };
-      inp.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); finish(true); } else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); finish(false); } });
-      inp.addEventListener("blur", () => finish(true));
+      input.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); finish(true); } else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); finish(false); } });
+      inp.querySelector("[data-cat-ok]").addEventListener("mousedown", ev => ev.preventDefault());
+      inp.querySelector("[data-cat-ok]").addEventListener("click", () => finish(true));
+      inp.querySelector("[data-cat-cancel]").addEventListener("mousedown", ev => ev.preventDefault());
+      inp.querySelector("[data-cat-cancel]").addEventListener("click", () => finish(false));
+      input.addEventListener("blur", () => finish(true));
     });
-    return { mark, refresh() { if (!box.querySelector(".cat-new")) box.innerHTML = catChipsInner(get()); } };
+    return { mark, refresh() { if (sel()) render(); } };
   }
+
   /** File paths come first (most asks point at a file on the network drive); anything starting with http(s) is a link. */
   const linkInner = `<div class="row wrap lf-add"><input class="input grow" name="lfValue" placeholder="File path, e.g. \\\\server\\Projects\\RFI-012.pdf (or paste a link)" autocomplete="off" spellcheck="false">
           <input class="input" name="lfLabel" placeholder="Label (optional)" style="max-width:170px" autocomplete="off"><button class="btn sm" type="button" data-lf-add>Add</button></div>`;
@@ -609,7 +617,7 @@
       if (t.due && !dueTg.cb.checked) dueTg.set(true);
       if (t.startDate && !startTg.cb.checked) startTg.set(true);
       if ((t.links || []).length && !lfTg.cb.checked) lfTg.set(true);
-      if (q("[data-cat]").querySelectorAll("[data-v]").length !== Model.categories().length) catChips.refresh(); // list edited elsewhere
+      if (q("[data-cat] select") && q("[data-cat] select").options.length !== Model.categories().length + 2) catChips.refresh(); // list edited elsewhere
       catChips.mark();
       if (document.activeElement !== proj) proj.value = Model.projectName(t.projectId);
       paintWaiting(t);
