@@ -19,7 +19,7 @@ Every task has: its project and **category** (both shown in front of the task ev
 
 **Categories:** your own list (it starts with RFI, Submittal, PO, Material, Change Order, Shop Drawing, Quote / Pricing, Invoice, Schedule, Other). They're listed in the side menu under the projects with open-task counts; click one to see its tasks. The pencil next to "Categories" (or More → Categories on a phone, or Settings) lets you add, rename, reorder and delete them, and **+ New category…** at the bottom of a task's Category drop-down adds one on the spot.
 
-**Activity log:** one section per task. Type an entry and press Enter (or **Add**); it sits on top as an open item, and the first open one is the task's "Next step" everywhere. Tick it when it's done and it moves into the dated **History** underneath, along with status changes and older notes. Shift+Enter logs an entry as already done.
+**Activity log:** one section per task. Type an entry and press Enter (or **Add**) and it goes straight into the dated **History**, along with status changes and other automatic entries. Next steps you add from the New task form still show above it as a checklist until you tick them.
 
 **Files & links:** paste a file path from File Explorer (e.g. `\\server\Projects\Job 1042\RFI-012.pdf`) or a web link. Browsers can't open network files from a web page, so a file shows a **Copy** button: paste the path into File Explorer's address bar.
 

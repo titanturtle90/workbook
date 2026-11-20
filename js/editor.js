@@ -360,7 +360,7 @@
         <div class="label">${App.icon("list")}Activity log</div>
         <div class="steps" data-steps></div>
         <form class="add-line sn-add" data-step-form>
-          <input class="input" name="newstep" placeholder="Add an entry, press Enter" autocomplete="off" title="Enter adds it as an open item. Shift+Enter logs it as already done.">
+          <input class="input" name="newstep" placeholder="Add an entry, press Enter" autocomplete="off">
           <button class="btn sm" type="submit">${App.icon("plus", "xs")}Add</button>
         </form>
         <div class="sub-label mt-12" data-hist-label hidden>History</div>
@@ -455,8 +455,8 @@
       else mutate(t => { t.steps = (t.steps || []).concat({ id: App.genId(), text: v, done: false }); });
       snInput.value = ""; snInput.focus();
     };
-    q("[data-step-form]").addEventListener("submit", e => { e.preventDefault(); addStepOrNote(false); });
-    snInput.addEventListener("keydown", e => { if (e.key === "Enter" && e.shiftKey) { e.preventDefault(); addStepOrNote(true); } });
+    // Everything you add goes straight into History as a dated entry.
+    q("[data-step-form]").addEventListener("submit", e => { e.preventDefault(); addStepOrNote(true); });
     q("[data-steps]").addEventListener("click", e => {
       const row = e.target.closest("[data-step-id]"); if (!row) return;
       const sid = row.dataset.stepId;
@@ -636,7 +636,7 @@
             <button type="button" class="icon-btn sm plain" data-sact="up" title="Move up" ${i === 0 ? "disabled" : ""}>${App.icon("up")}</button>
             <button type="button" class="icon-btn sm plain" data-sact="down" title="Move down" ${i === open.length - 1 ? "disabled" : ""}>${App.icon("down")}</button>
             <button type="button" class="icon-btn sm plain danger" data-sact="del" title="Remove">${App.icon("x")}</button>
-          </div></div>`).join("") : `<div class="muted" style="font-size:.86rem;padding:4px 0 6px">Nothing open. Add an entry below; the first open one shows as “Next step” everywhere, and ticking it moves it to History.</div>`;
+          </div></div>`).join("") : "";
       }
 
       // history: finished steps and notes together, newest first
