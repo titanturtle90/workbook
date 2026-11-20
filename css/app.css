@@ -432,6 +432,9 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .ttable .c-who .who { display: inline-flex; align-items: center; gap: 6px; }
 .ttable .c-due, .ttable .c-status, .ttable .c-prio, .ttable .c-proj { white-space: nowrap; }
 .ttable .group-row td { background: var(--surface-2); font-weight: 700; font-size: 0.78rem; color: var(--text-2); padding: 7px 10px; }
+.ttable .group-row.snoozed-row td { color: var(--purple); background: var(--purple-soft); }
+.ttable .group-row .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; }
+.section-head h2 .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; }
 .ttable .group-row .count { color: var(--text-3); font-weight: 600; margin-left: 6px; }
 .table-wrap { overflow-x: auto; border-radius: var(--radius); }
 

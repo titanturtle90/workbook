@@ -180,14 +180,17 @@
     const cols = COLS.filter(c => !(opts.hideProject && c.key === "project"));
     const span = cols.length + 2 + (canDrag() ? 1 : 0);
     const head = `<tr>${canDrag() ? `<th class="c-drag"></th>` : ""}<th class="c-check"></th>${cols.map(c => `<th class="${c.cls} sortable ${state.sort === c.key ? "sorted" : ""}" data-sort="${c.key}">${c.label} ${state.sort === c.key ? App.icon(state.dir === "desc" ? "up" : "down") : ""}</th>`).join("")}<th></th></tr>`;
-    const bodies = groups.map(g => `<tbody ${canDrag() ? "data-sortable" : ""}>${g.label && !opts.noGroupRows ? `<tr class="group-row"><td colspan="${span}">${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : g.dot ? `<span class="dot-sw" style="background:${g.dot};border-radius:50%;margin-right:6px"></span>` : ""}${esc(g.label)}<span class="count">${g.tasks.length}</span></td></tr>` : ""}${g.tasks.map(t => rowHtml(t, cols)).join("")}</tbody>`).join("");
+    const bodies = groups.map(g => `<tbody ${canDrag() ? "data-sortable" : ""}>${g.label && !opts.noGroupRows ? `<tr class="group-row ${g.snoozed ? "snoozed-row" : ""}"><td colspan="${span}">${g.snoozed ? App.icon("moon", "sm") : ""}${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : g.dot ? `<span class="dot-sw" style="background:${g.dot};border-radius:50%;margin-right:6px"></span>` : ""}${esc(g.label)}<span class="count">${g.tasks.length}</span></td></tr>` : ""}${g.tasks.map(t => rowHtml(t, cols)).join("")}</tbody>`).join("");
     return `<div class="table-wrap ${opts.flush ? "" : "mt-12"}"><table class="ttable ${opts.hideProject ? "no-proj" : ""}"><thead>${head}</thead>${bodies}</table></div>`;
   }
   const cardsHtml = (tasks, opts) => `<div class="list" ${canDrag() ? "data-sortable" : ""}>${tasks.map(t => Comp.taskCard(t, Object.assign({ drag: canDrag() }, opts))).join("")}</div>`;
   function renderTable(tasks) {
-    const groups = Model.group(tasks, state.group);
+    // Snoozed tasks ("not until" a later date) drop to their own section at the bottom, soonest first.
+    const snoozed = tasks.filter(Model.isSnoozed).sort((a, b) => a.startDate.localeCompare(b.startDate) || Model.manualCompare(a, b));
+    const groups = Model.group(tasks.filter(t => !Model.isSnoozed(t)), state.group).filter(g => g.tasks.length);
+    if (snoozed.length) groups.push({ key: "__snoozed", label: "Snoozed (not until later)", snoozed: true, tasks: snoozed });
     if (!App.isDesktop()) {
-      return dragHint() + groups.map(g => (g.label ? `<div class="section-head mt-16"><h2>${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : ""}${esc(g.label)}</h2><span class="count">${g.tasks.length}</span></div>` : `<div class="mt-12"></div>`) + cardsHtml(g.tasks)).join("");
+      return dragHint() + groups.map(g => (g.label ? `<div class="section-head mt-16"><h2>${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : ""}${g.snoozed ? App.icon("moon", "sm") : ""}${esc(g.label)}</h2><span class="count">${g.tasks.length}</span></div>` : `<div class="mt-12"></div>`) + cardsHtml(g.tasks)).join("");
     }
     return dragHint() + tableHtml(groups);
   }

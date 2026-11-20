@@ -29,7 +29,7 @@ Every task has: its project and **category** (both shown in front of the task ev
 
 **Recently deleted:** deleting a task moves it to a bin for 30 days. Restore it, or delete it forever, from the Done page, Settings, or More on phones.
 
-**Not until:** give a task a "not until" date (`Z`, the task menu, or the form) to hide it from Today until then. It still appears if it becomes due.
+**Not until:** give a task a "not until" date (`Z`, the task menu, or the form) to hide it from Today until then. It still appears if it becomes due. In Table it drops to a **Snoozed** section at the bottom, soonest first.
 
 **Change several at once:** click **Select** (or `Ctrl`/`⌘`+click, or `V` on a highlighted task; long-press on phones), then use the bar to mark done, set status, due date, not-until, project or priority, or delete. Everything can be undone.
 
