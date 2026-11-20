@@ -52,7 +52,7 @@
     }
     if (key === "projects") {
       active.forEach(t => counts.set(t.projectId || "", (counts.get(t.projectId || "") || 0) + 1));
-      return [...counts.keys()].sort((a, b) => !a ? 1 : !b ? -1 : Model.projectName(a).localeCompare(Model.projectName(b)))
+      return [...counts.keys()].sort((a, b) => Model.projectOrderKey(Model.project(a)).localeCompare(Model.projectOrderKey(Model.project(b))))
         .map(id => ({ value: id, label: id ? Model.projectName(id) || "Unknown" : "No project", swatch: id ? Model.project(id)?.color || "#999" : "", count: counts.get(id), on: f.projects.includes(id) }));
     }
     if (key === "statuses") return Model.ACTIVE_STATUSES.map(st => ({ value: st.key, label: st.label, dot: Model.statusDot(st.key), on: f.statuses.includes(st.key) }));

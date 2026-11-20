@@ -183,6 +183,9 @@
   // ---------- lookups (need Store; resolved lazily) ----------
   Model.person = id => id && id !== ME ? global.Store.people.get(id) : null;
   Model.personName = id => id === ME ? "Me" : (Model.person(id)?.name || "");
+  /** Projects A–Z, then tasks with no project, then the "Both" project (asks that cover more than one job) at the very bottom. */
+  Model.isBothProject = p => !!p && p.name.trim().toLowerCase() === "both";
+  Model.projectOrderKey = p => (!p ? "1" : Model.isBothProject(p) ? "2" : "0" + p.name.toLowerCase());
   Model.project = id => id ? global.Store.projects.get(id) : null;
   Model.projectName = id => Model.project(id)?.name || "";
   Model.requesterName = t => Model.personName(t.requesterId) || "";
@@ -273,7 +276,7 @@
     const add = (k, meta, t) => { if (!map.has(k)) map.set(k, Object.assign({ key: k, tasks: [] }, meta)); map.get(k).tasks.push(t); };
     tasks.forEach(t => {
       if (by === "requester") { const id = t.requesterId || ""; add(id, { label: id ? Model.personName(id) || "Unknown" : "No requester", order: id === ME ? "0" : id ? "1" + Model.personName(id).toLowerCase() : "2" }, t); }
-      else if (by === "project") { const p = Model.project(t.projectId); add(p ? p.id : "", { label: p ? p.name : "No project", color: p?.color, order: p ? "0" + p.name.toLowerCase() : "1" }, t); }
+      else if (by === "project") { const p = Model.project(t.projectId); add(p ? p.id : "", { label: p ? p.name : "No project", color: p?.color, order: Model.projectOrderKey(p) }, t); }
       else if (by === "category") { const c = Model.category(t.category); add(c ? c.key : "", { label: c ? c.label : "No category", order: String(c ? Model.categories().indexOf(c) : 9999).padStart(4, "0") }, t); }
       else if (by === "status") { const i = STATUSES.findIndex(s => s.key === t.status); add(t.status, { label: Model.status(t.status).label, dot: Model.statusDot(t.status), order: String(i).padStart(2, "0") }, t); }
       else if (by === "priority") { const p = Model.effPriority(t); add(p.key, { label: p.label, order: String(9 - Model.effRank(t)) }, t); }
