@@ -15,9 +15,11 @@ No build step: plain HTML/CSS/JS served statically (GitHub Pages), with Firebase
 | **Weekly review** | A guided Friday pass: wins, slipped tasks, follow-ups, tasks missing a next step, stale tasks, and what's due next week. |
 | **Export** | CSV for Excel (open or all tasks), a "what I did this month" summary, and JSON backup/restore. |
 
-Every task has: its project (shown in front of the task everywhere), the ask, a **category** (RFI, Submittal, PO, Material, Change Order, Shop Drawing, Quote / Pricing, Invoice, Schedule, Other), requester (or **Me** for self-assigned), status (New, Not Started, In Progress, Waiting On Someone, In Review, Blocked, Done, Cancelled), priority (High/Medium/Low, exactly as you set it), and who you're **waiting on** with a follow-up date. **Due date**, **Not until** and **File or link** are tick boxes: tick one to show its fields, untick it to clear them.
+Every task has: its project and **category** (both shown in front of the task everywhere), the ask, requester (or **Me** for self-assigned), status (New, Not Started, In Progress, Waiting On Someone, In Review, Blocked, Done, Cancelled), priority (High/Medium/Low, exactly as you set it), and who you're **waiting on** with a follow-up date. **Due date**, **Not until** and **File or link** are tick boxes: tick one to show its fields, untick it to clear them.
 
-**Next steps & notes:** one section per task. Type and press Enter (or **Step**) to add a next step, or **Note** (Shift+Enter) to log what happened. Open steps sit on top as a checklist; ticked steps and notes move into a dated **History** underneath.
+**Categories:** your own list (it starts with RFI, Submittal, PO, Material, Change Order, Shop Drawing, Quote / Pricing, Invoice, Schedule, Other). They're listed in the side menu under the projects with open-task counts; click one to see its tasks. The pencil next to "Categories" (or More → Categories on a phone, or Settings) lets you add, rename, reorder and delete them, and **+ New** in a task's category chips adds one on the spot.
+
+**Activity log:** one section per task. Type an entry and press Enter (or **Add**); it sits on top as an open item, and the first open one is the task's "Next step" everywhere. Tick it when it's done and it moves into the dated **History** underneath, along with status changes and older notes. Shift+Enter logs an entry as already done.
 
 **Files & links:** paste a file path from File Explorer (e.g. `\\server\Projects\Job 1042\RFI-012.pdf`) or a web link. Browsers can't open network files from a web page, so a file shows a **Copy** button: paste the path into File Explorer's address bar.
 
@@ -55,7 +57,7 @@ Press `?` in the app for the full list.
 | `Esc` | Close | `F` | Finish the next step |
 | | | `Z` | Not until… |
 | | | `V` | Select (change several) |
-| | | `L` | Add a step or note |
+| | | `L` | Add to the activity log |
 
 ## Setup
 

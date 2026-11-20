@@ -60,7 +60,7 @@
     if (key === "due") return DUE_CHOICES.map(([v, l]) => ({ value: v, label: l, on: f.due === v }));
     if (key === "categories") {
       active.forEach(t => counts.set(t.category || "", (counts.get(t.category || "") || 0) + 1));
-      return Model.CATEGORIES.map(c => c.key).concat("").filter(k => counts.has(k) || f.categories.includes(k))
+      return Model.categories().map(c => c.key).concat("").filter(k => counts.has(k) || f.categories.includes(k))
         .map(k => ({ value: k, label: k ? Model.categoryLabel(k) : "No category", count: counts.get(k) || 0, on: f.categories.includes(k) }));
     }
     return [];
@@ -145,6 +145,7 @@
   // ---------- table ----------
   const COLS = [
     { key: "project", label: "Project", cls: "c-proj" },
+    { key: "category", label: "Category", cls: "c-cat" },
     { key: "title", label: "Task", cls: "c-title" },
     { key: "requester", label: "Who asked", cls: "c-who" },
     { key: "next", label: "Next step", cls: "c-next" },
@@ -158,7 +159,8 @@
     const n = Model.nextStep(t);
     const cell = {
       project: () => `<td class="c-proj">${Comp.projectTag(t.projectId) || `<span class="muted">—</span>`}</td>`,
-      title: () => `<td class="c-title"><div class="t">${esc(t.title || "Untitled")}</div><div class="tags">${Comp.categoryPill(t)}${Comp.snoozePill(t, true)}${Comp.followPill(t)}${Comp.extrasPills(t)}</div></td>`,
+      title: () => `<td class="c-title"><div class="t">${esc(t.title || "Untitled")}</div><div class="tags">${Comp.snoozePill(t, true)}${Comp.followPill(t)}${Comp.extrasPills(t)}</div></td>`,
+      category: () => `<td class="c-cat">${Comp.categoryTag(t) || `<span class="muted">—</span>`}</td>`,
       requester: () => `<td class="c-who">${Comp.who(t.requesterId)}</td>`,
       next: () => `<td class="c-next">${n ? `<div class="n"><button type="button" class="mini-check" data-act="step" data-step="${esc(n.id)}" title="Mark step done">${App.icon("check")}</button><span>${esc(n.text)}</span></div>` : `<span class="muted">—</span>`}</td>`,
       due: () => `<td class="c-due">${Comp.duePill(t, true)}</td>`,

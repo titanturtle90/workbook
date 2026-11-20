@@ -341,6 +341,11 @@
     const c = Model.category(t.category);
     return c ? `<span class="pill cat" title="Category">${esc(c.label)}</span>` : "";
   };
+  /** The category, sitting between the project and the task's title. */
+  Comp.categoryTag = t => {
+    const c = Model.category(t.category);
+    return c ? `<span class="t-cat" title="Category">${esc(c.label)}</span>` : "";
+  };
   /** The project name that sits in front of a task's title. */
   Comp.projectTag = projectId => {
     const p = Model.project(projectId);
@@ -370,14 +375,13 @@
       ${active ? `<span class="prio-bar prio-${prio.key}"></span>` : ""}
       <button type="button" class="check ${active ? "" : "on"}" data-act="toggle" aria-label="${active ? "Mark done" : "Reopen"}" title="${active ? "Mark done (X)" : "Reopen"}">${App.icon("check")}</button>
       <div class="body">
-        <div class="title">${opts.hideProject ? "" : Comp.projectTag(t.projectId)}${esc(t.title || "Untitled")}</div>
+        <div class="title">${opts.hideProject ? "" : Comp.projectTag(t.projectId)}${Comp.categoryTag(t)}${esc(t.title || "Untitled")}</div>
         ${Comp.nextStepLine(t)}
         <div class="meta">
           ${opts.hideRequester ? "" : (t.requesterId ? `<span class="who">${Comp.avatar(t.requesterId)}${esc(Model.requesterName(t))}</span>` : "")}
           ${Comp.duePill(t, active)}
           ${active ? Comp.statusPill(t, true) : `<span class="pill st ${t.status === "cancelled" ? "st-cancelled" : "st-done"}">${App.icon("check")}${esc(t.status === "cancelled" ? "Cancelled" : "Done " + (t.completedAt ? App.fmtIso(t.completedAt) : ""))}</span>`}
           ${active ? Comp.prioPill(t, false) : ""}
-          ${Comp.categoryPill(t)}
           ${active ? Comp.snoozePill(t, true) : ""}
           ${active ? Comp.followPill(t) : ""}
           ${opts.compact ? "" : Comp.extrasPills(t)}

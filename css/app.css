@@ -210,6 +210,11 @@ kbd {
   .side-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 6px 4px; }
   .side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
   .side-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6f82a3; padding: 10px 10px 4px; }
+  .side-label-row { display: flex; align-items: center; padding-right: 4px; }
+  .side-edit { margin-left: auto; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: #8ea0bf; }
+  .side-edit:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+  .side-collapsed .side-edit { display: none; }
+  .side-cat .ic { width: 15px; height: 15px; opacity: 0.8; }
   .side-project .swatch { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
 
   .topbar, .tabbar, .fab { display: none; }
@@ -418,10 +423,10 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 .trow { cursor: pointer; }
 .trow:hover td { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
 .ttable .c-check { width: 34px; padding-right: 0; }
-.ttable .c-title { min-width: 220px; }
+.ttable .c-title { min-width: 190px; }
 .ttable .c-title .t { font-weight: 600; line-height: 1.3; }
 .ttable .c-title .tags { margin-top: 3px; display: flex; gap: 6px; flex-wrap: wrap; }
-.ttable .c-next { min-width: 180px; color: var(--text-2); }
+.ttable .c-next { min-width: 150px; color: var(--text-2); }
 .ttable .c-next .n { display: flex; gap: 6px; align-items: flex-start; }
 .ttable .c-who { white-space: nowrap; }
 .ttable .c-who .who { display: inline-flex; align-items: center; gap: 6px; }
@@ -734,11 +739,24 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
 }
 .t-proj::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--pc); flex-shrink: 0; }
 .ttable .c-proj .t-proj { margin-right: 0; max-width: 180px; }
+.t-cat {
+  display: inline-flex; align-items: center; max-width: 100%; vertical-align: 1px; margin-right: 7px;
+  padding: 0 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; line-height: 1.55; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-2); background: var(--surface); box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.ttable .c-cat { white-space: nowrap; width: 1%; }
+.ttable .c-cat .t-cat { margin-right: 0; max-width: 130px; }
+.chip.add-cat { border-style: dashed; color: var(--text-3); }
+.cat-new { width: 160px; min-height: 32px; padding: 4px 10px; font-size: 0.85rem; }
+.catman-list { display: flex; flex-direction: column; gap: 6px; }
+.catman-row { display: flex; align-items: center; gap: 4px; }
+.catman-row .input { flex: 1; min-height: 38px; }
+.catman-n { min-width: 22px; text-align: right; font-size: 0.8rem; margin-right: 4px; }
 .pill.cat { background: var(--surface); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--border-strong); text-transform: none; }
 .ttable .c-title .tags:empty { display: none; }
 /* By project: every project's table uses the same column widths so they line up */
 .ttable.no-proj { table-layout: fixed; }
-.ttable.no-proj th.c-drag { width: 30px; } .ttable.no-proj th.c-check { width: 36px; }
+.ttable.no-proj th.c-drag { width: 30px; } .ttable.no-proj th.c-check { width: 36px; } .ttable.no-proj th.c-cat { width: 120px; }
 .ttable.no-proj th.c-who { width: 160px; } .ttable.no-proj th.c-next { width: 24%; }
 .ttable.no-proj th.c-due { width: 118px; } .ttable.no-proj th.c-status { width: 150px; } .ttable.no-proj th.c-prio { width: 112px; }
 .ttable.no-proj th:last-child { width: 40px; }

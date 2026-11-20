@@ -42,7 +42,7 @@
         <div class="field"><label>Who asked <span class="muted">(optional)</span></label><div class="ac"><input class="input" name="requester" placeholder="Name, or “Me”" value="${esc(Model.personName(t.requesterId))}"></div></div>
         <div class="field"><label>Project <span class="muted">(optional)</span></label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(Model.projectName(t.projectId))}"></div></div>
         <div class="field"><label>Priority</label><div class="seg full" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${(t.priority || "medium") === p.key ? "on" : ""}">${p.label}</button>`).join("")}</div></div>
-        <div class="field"><label>Category</label><select class="select" name="category"><option value="">—</option>${Model.CATEGORIES.map(c => `<option value="${c.key}" ${t.category === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select></div>
+        <div class="field"><label>Category</label><select class="select" name="category"><option value="">—</option>${Model.categories().map(c => `<option value="${c.key}" ${t.category === c.key ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</select></div>
         <div class="field span-2"><label>Details</label><textarea class="input" name="details" rows="3">${esc(t.details || "")}</textarea></div>
       </div>
       <button type="submit" hidden></button>

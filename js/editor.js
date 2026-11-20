@@ -46,7 +46,41 @@
           <div class="quick-dates">${quickDateChips("data-date")}</div>`;
   const startInner = value => `<div class="row"><input class="input" type="date" name="startDate" value="${esc(value || "")}" style="max-width:200px"></div>
           <div class="quick-dates">${snoozeChips("data-start")}</div>`;
-  const categoryChips = sel => `<div class="chips cat-chips" data-cat>${Model.CATEGORIES.map(c => `<button type="button" class="chip ${sel === c.key ? "on" : ""}" data-v="${c.key}">${esc(c.label)}</button>`).join("")}</div>`;
+  const catChipsInner = sel => Model.categories().map(c => `<button type="button" class="chip ${sel === c.key ? "on" : ""}" data-v="${esc(c.key)}">${esc(c.label)}</button>`).join("") +
+    `<button type="button" class="chip add-cat" data-cat-add title="Add a category to your list">${App.icon("plus", "xs")}New</button>`;
+  const categoryChips = sel => `<div class="chips cat-chips" data-cat>${catChipsInner(sel)}</div>`;
+  /**
+   * Category chips: tap to pick, tap again to clear; "+ New" adds a category to your list right here.
+   * get() returns the current key; set(key) stores it.
+   */
+  function bindCategoryChips(box, get, set) {
+    const mark = () => box.querySelectorAll("[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === (get() || "")));
+    box.addEventListener("click", e => {
+      const b = e.target.closest("[data-v]");
+      if (b) { set(get() === b.dataset.v ? "" : b.dataset.v); mark(); return; }
+      const add = e.target.closest("[data-cat-add]"); if (!add) return;
+      const inp = App.el(`<input class="input cat-new" placeholder="New category" aria-label="New category name" autocomplete="off">`);
+      add.replaceWith(inp); inp.focus();
+      let done = false;
+      const finish = keep => {
+        if (done) return; done = true;
+        const label = inp.value.trim();
+        let key = "";
+        if (keep && label) {
+          const list = Model.categories().slice();
+          const found = list.find(c => c.label.toLowerCase() === label.toLowerCase());
+          if (found) key = found.key;
+          else { key = App.genId(); list.push({ key, label }); Store.setSetting("categories", list); App.toast(`Added “${label}” to your categories`); }
+        }
+        box.innerHTML = catChipsInner(key || get());
+        if (key) set(key);
+        mark();
+      };
+      inp.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); finish(true); } else if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); finish(false); } });
+      inp.addEventListener("blur", () => finish(true));
+    });
+    return { mark, refresh() { if (!box.querySelector(".cat-new")) box.innerHTML = catChipsInner(get()); } };
+  }
   /** File paths come first (most asks point at a file on the network drive); anything starting with http(s) is a link. */
   const linkInner = `<div class="row wrap lf-add"><input class="input grow" name="lfValue" placeholder="File path, e.g. \\\\server\\Projects\\RFI-012.pdf (or paste a link)" autocomplete="off" spellcheck="false">
           <input class="input" name="lfLabel" placeholder="Label (optional)" style="max-width:170px" autocomplete="off"><button class="btn sm" type="button" data-lf-add>Add</button></div>`;
@@ -105,8 +139,8 @@
     const body = App.el(`<form class="qa" autocomplete="off">
       ${tpls.length ? `<div class="tpl-row"><span class="label">Start from a template</span><div class="chips scroll">${tpls.slice(0, 8).map(t => `<button type="button" class="chip" data-tpl="${esc(t.id)}">${App.icon("template", "xs")}${esc(t.name)}</button>`).join("")}</div></div>` : ""}
       <div class="field"><label>Project</label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(projName)}"></div></div>
-      <div class="field mt-12"><label>Task</label><input class="input title-input" name="title" placeholder="What's the ask?" required></div>
       <div class="field mt-12"><label>Category</label>${categoryChips(defaults.category || "")}</div>
+      <div class="field mt-12"><label>Task</label><input class="input title-input" name="title" placeholder="What's the ask?" required></div>
       <div class="form-grid mt-12">
         <div class="field"><label>Who asked</label>
           <div class="ac"><input class="input" name="requester" placeholder="Name, or “Me”" value="${esc(reqName)}"></div>
@@ -150,11 +184,7 @@
     due.addEventListener("change", markDate); markDate();
     f.querySelectorAll("[data-prio] button").forEach(b => b.addEventListener("click", () => { prio = b.dataset.v; f.querySelectorAll("[data-prio] button").forEach(x => x.classList.toggle("on", x === b)); }));
     let category = defaults.category || "";
-    f.querySelector("[data-cat]").addEventListener("click", e => {
-      const b = e.target.closest("[data-v]"); if (!b) return;
-      category = category === b.dataset.v ? "" : b.dataset.v;
-      f.querySelectorAll("[data-cat] [data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === category));
-    });
+    const catChips = bindCategoryChips(f.querySelector("[data-cat]"), () => category, v => { category = v; });
     // due date / not until: ticking shows the date; unticking clears it
     bindToggle(f, "due", () => setTimeout(() => due.focus(), 30), () => { due.value = ""; markDate(); });
     bindToggle(f, "start", () => setTimeout(() => startIn.focus(), 30), () => { startIn.value = ""; markStart(); });
@@ -218,7 +248,7 @@
       if (x.projectId) proj.value = Model.projectName(x.projectId);
       prio = x.priority; f.querySelectorAll("[data-prio] button").forEach(p => p.classList.toggle("on", p.dataset.v === prio));
       step.value = x.steps[0] ? x.steps[0].text : "";
-      if (x.category) { category = x.category; f.querySelectorAll("[data-cat] [data-v]").forEach(c => c.classList.toggle("on", c.dataset.v === category)); }
+      if (x.category) { category = x.category; catChips.mark(); }
       tplExtra = { tpl, steps: x.steps.slice(1), details: x.details };
       const more = f.querySelector("[data-tpl-steps]");
       more.hidden = !tplExtra.steps.length;
@@ -301,13 +331,13 @@
     const t = t0;
     const body = App.el(`<div class="editor">
       <div class="field ed-proj"><label>Project</label><div class="ac"><input class="input" name="project" placeholder="Pick or create" value="${esc(Model.projectName(t.projectId))}"></div></div>
-      <textarea class="input title-input mt-8" rows="1" name="title" placeholder="What's the ask?" style="min-height:46px;resize:none">${esc(t.title)}</textarea>
+      <div class="field mt-12"><label>Category</label>${categoryChips(t.category || "")}</div>
+      <textarea class="input title-input mt-12" rows="1" name="title" placeholder="What's the ask?" style="min-height:46px;resize:none">${esc(t.title)}</textarea>
       <div class="row wrap mt-12">
         <select class="select" name="status" data-st style="width:auto;min-width:190px">${Model.STATUSES.map(s => `<option value="${s.key}" ${t.status === s.key ? "selected" : ""}>${esc(s.label)}</option>`).join("")}</select>
         <div class="seg" data-prio>${Model.PRIORITIES.slice().reverse().map(p => `<button type="button" data-v="${p.key}" class="${t.priority === p.key ? "on" : ""}">${p.label}</button>`).join("")}</div>
         <span data-eff></span>
       </div>
-      <div class="field mt-12"><label>Category</label>${categoryChips(t.category || "")}</div>
 
       <div class="form-grid mt-16">
         <div class="field"><label>Who asked</label><div class="ac"><input class="input" name="requester" placeholder="Name, or “Me”" value="${esc(Model.personName(t.requesterId))}"></div></div>
@@ -319,12 +349,11 @@
       <div class="ed-section" data-waiting-wrap></div>
 
       <div class="ed-section">
-        <div class="label">${App.icon("list")}Next steps &amp; notes</div>
+        <div class="label">${App.icon("list")}Activity log</div>
         <div class="steps" data-steps></div>
         <form class="add-line sn-add" data-step-form>
-          <input class="input" name="newstep" placeholder="Add a next step, or a note about what happened" autocomplete="off">
-          <button class="btn sm" type="submit" title="Add as a next step (Enter)">${App.icon("plus", "xs")}Step</button>
-          <button class="btn sm ghost" type="button" data-add-note title="Add as a note (Shift+Enter)">${App.icon("note", "xs")}Note</button>
+          <input class="input" name="newstep" placeholder="Add an entry, press Enter" autocomplete="off" title="Enter adds it as an open item. Shift+Enter logs it as already done.">
+          <button class="btn sm" type="submit">${App.icon("plus", "xs")}Add</button>
         </form>
         <div class="sub-label mt-12" data-hist-label hidden>History</div>
         <div class="log" data-log></div>
@@ -403,10 +432,7 @@
     startIn.addEventListener("change", () => setStart(startIn.value));
     const startTg = bindToggle(body, "start", () => setTimeout(() => { startIn.focus(); try { startIn.showPicker && startIn.showPicker(); } catch (e) { /* ignore */ } }, 30), () => setStart(""));
     // category: tap to pick, tap again to clear
-    q("[data-cat]").addEventListener("click", e => {
-      const b = e.target.closest("[data-v]"); if (!b) return;
-      mutate(t => { t.category = t.category === b.dataset.v ? "" : b.dataset.v; });
-    });
+    const catChips = bindCategoryChips(q("[data-cat]"), () => (Store.tasks.get(id) || {}).category || "", v => mutate(t => { t.category = v; }, true));
     body.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", () => setStart(b.dataset.start)));
     body.querySelectorAll("[data-date]").forEach(b => b.addEventListener("click", () => setDue(b.dataset.date)));
 
@@ -422,7 +448,6 @@
       snInput.value = ""; snInput.focus();
     };
     q("[data-step-form]").addEventListener("submit", e => { e.preventDefault(); addStepOrNote(false); });
-    q("[data-add-note]").addEventListener("click", () => addStepOrNote(true));
     snInput.addEventListener("keydown", e => { if (e.key === "Enter" && e.shiftKey) { e.preventDefault(); addStepOrNote(true); } });
     q("[data-steps]").addEventListener("click", e => {
       const row = e.target.closest("[data-step-id]"); if (!row) return;
@@ -584,7 +609,8 @@
       if (t.due && !dueTg.cb.checked) dueTg.set(true);
       if (t.startDate && !startTg.cb.checked) startTg.set(true);
       if ((t.links || []).length && !lfTg.cb.checked) lfTg.set(true);
-      body.querySelectorAll("[data-cat] [data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === (t.category || "")));
+      if (q("[data-cat]").querySelectorAll("[data-v]").length !== Model.categories().length) catChips.refresh(); // list edited elsewhere
+      catChips.mark();
       if (document.activeElement !== proj) proj.value = Model.projectName(t.projectId);
       paintWaiting(t);
       paintShots(t);
@@ -602,7 +628,7 @@
             <button type="button" class="icon-btn sm plain" data-sact="up" title="Move up" ${i === 0 ? "disabled" : ""}>${App.icon("up")}</button>
             <button type="button" class="icon-btn sm plain" data-sact="down" title="Move down" ${i === open.length - 1 ? "disabled" : ""}>${App.icon("down")}</button>
             <button type="button" class="icon-btn sm plain danger" data-sact="del" title="Remove">${App.icon("x")}</button>
-          </div></div>`).join("") : `<div class="muted" style="font-size:.86rem;padding:4px 0 6px">No open steps. The first one shows as “Next step” everywhere.</div>`;
+          </div></div>`).join("") : `<div class="muted" style="font-size:.86rem;padding:4px 0 6px">Nothing open. Add an entry below; the first open one shows as “Next step” everywhere, and ticking it moves it to History.</div>`;
       }
 
       // history: finished steps and notes together, newest first

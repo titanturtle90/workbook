@@ -39,8 +39,8 @@
     { key: "monthly", label: "Every month" },
     { key: "quarterly", label: "Every 3 months" }
   ];
-  // Common kinds of ask (Settings can't change these yet; "Other" covers the rest)
-  const CATEGORIES = [
+  // Starting categories; you edit the list in the side menu (Categories → edit). Stored in settings so it syncs.
+  const DEFAULT_CATEGORIES = [
     { key: "rfi", label: "RFI" },
     { key: "submittal", label: "Submittal" },
     { key: "po", label: "PO" },
@@ -55,7 +55,12 @@
   const PROJECT_COLORS = ["#2a5bd7", "#7149d0", "#0e8a7d", "#1f8a4c", "#a67c00", "#d0700a", "#d43a2f", "#be185d", "#0369a1", "#475569"];
   const ME = "me";
 
-  const Model = { STATUSES, PRIORITIES, SOURCES, RECURRENCE, CATEGORIES, PROJECT_COLORS, ME };
+  const Model = { STATUSES, PRIORITIES, SOURCES, RECURRENCE, DEFAULT_CATEGORIES, PROJECT_COLORS, ME };
+  /** Your categories, in your order: [{ key, label }]. */
+  Model.categories = () => {
+    const list = global.Store && global.Store.setting ? global.Store.setting("categories", null) : null;
+    return Array.isArray(list) ? list : DEFAULT_CATEGORIES;
+  };
   Model.FOLLOW_UP_DAYS = 2; // default gap before nudging someone you are waiting on
   Model.ACTIVE_STATUSES = STATUSES.filter(s => s.key !== "done" && s.key !== "cancelled");
   Model.status = key => STATUSES.find(s => s.key === key) || STATUSES[0];
@@ -63,7 +68,7 @@
   Model.priorityDot = key => key === "urgent" ? "var(--pr-urgent-bg)" : `var(--pr-${key})`;
   Model.priority = key => PRIORITIES.find(p => p.key === key) || PRIORITIES[1];
   Model.source = key => SOURCES.find(s => s.key === key);
-  Model.category = key => key ? CATEGORIES.find(c => c.key === key) || null : null;
+  Model.category = key => key ? Model.categories().find(c => c.key === key) || null : null;
   Model.categoryLabel = key => Model.category(key)?.label || "";
   Model.recurrence = key => RECURRENCE.find(r => r.key === (key || "")) || RECURRENCE[0];
 
@@ -231,7 +236,7 @@
   /** Your drag-and-drop order; tasks you haven't placed yet follow in smart order. */
   const manual = (a, b) => (orderKey(a) - orderKey(b) || 0) || smart(a, b);
   Model.manualCompare = manual;
-  const catIndex = t => { const i = CATEGORIES.findIndex(c => c.key === t.category); return i < 0 ? 99 : i; };
+  const catIndex = t => { const i = Model.categories().findIndex(c => c.key === t.category); return i < 0 ? 9999 : i; };
   Model.comparator = (key, dir) => {
     const sign = dir === "desc" ? -1 : 1;
     const by = {
@@ -269,7 +274,7 @@
     tasks.forEach(t => {
       if (by === "requester") { const id = t.requesterId || ""; add(id, { label: id ? Model.personName(id) || "Unknown" : "No requester", order: id === ME ? "0" : id ? "1" + Model.personName(id).toLowerCase() : "2" }, t); }
       else if (by === "project") { const p = Model.project(t.projectId); add(p ? p.id : "", { label: p ? p.name : "No project", color: p?.color, order: p ? "0" + p.name.toLowerCase() : "1" }, t); }
-      else if (by === "category") { const c = Model.category(t.category); add(c ? c.key : "", { label: c ? c.label : "No category", order: String(c ? CATEGORIES.indexOf(c) : 99).padStart(2, "0") }, t); }
+      else if (by === "category") { const c = Model.category(t.category); add(c ? c.key : "", { label: c ? c.label : "No category", order: String(c ? Model.categories().indexOf(c) : 9999).padStart(4, "0") }, t); }
       else if (by === "status") { const i = STATUSES.findIndex(s => s.key === t.status); add(t.status, { label: Model.status(t.status).label, dot: Model.statusDot(t.status), order: String(i).padStart(2, "0") }, t); }
       else if (by === "priority") { const p = Model.effPriority(t); add(p.key, { label: p.label, order: String(9 - Model.effRank(t)) }, t); }
       else if (by === "due") { const b = Model.dueBucket(t); add(b, { label: Model.DUE_BUCKETS[b], order: String(Object.keys(Model.DUE_BUCKETS).indexOf(b)) }, t); }

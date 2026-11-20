@@ -65,6 +65,20 @@
       reviewDue: Views.reviewDue()
     };
   }
+  /** Side menu: your categories (click one to see its open tasks), with a pencil to edit the list. */
+  function sideCategories(cur) {
+    const cats = Model.categories(), n = global.Categories.counts();
+    const f = Views.tasksState.filters;
+    const on = key => cur === "tasks" && Views.tasksState.mode !== "today" && f.categories.length === 1 && f.categories[0] === key;
+    return `<div class="side-label side-label-row"><span class="side-text">Categories</span><button type="button" class="side-edit" data-action="categories" title="Add, rename or reorder categories" aria-label="Edit categories">${App.icon("edit", "xs")}</button></div>` +
+      (cats.length ? cats.map(c => `<a class="side-item side-cat ${on(c.key) ? "active" : ""}" href="#tasks" data-show-cat="${esc(c.key)}" title="${esc(c.label)}">${App.icon("tag")}<span class="side-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.label)}</span>${n.get(c.key) ? `<span class="count">${n.get(c.key)}</span>` : ""}</a>`).join("")
+        : `<button type="button" class="side-item" data-action="categories">${App.icon("plus")}<span class="side-text">Add categories</span></button>`);
+  }
+  document.getElementById("sideNav").addEventListener("click", e => {
+    const a = e.target.closest("[data-show-cat]"); if (!a) return;
+    e.preventDefault();
+    global.Categories.show(a.dataset.showCat);
+  });
   function renderNav() {
     if (!Store.isReady()) return;
     const c = counts();
@@ -78,7 +92,8 @@
       .filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 8);
     side.innerHTML = NAV.map((n, i) => (i === 4 ? `<div class="side-sep"></div>` : "") +
       `<a class="side-item ${cur === n.key ? "active" : ""}" href="#${n.key}" title="${esc(n.label)} (${n.kbd})">${App.icon(n.icon)}<span class="side-text">${esc(n.label)}</span>${countFor(n.key)}<kbd>${n.kbd}</kbd></a>`).join("") +
-      (projects.length ? `<div class="side-label"><span class="side-text">Active projects</span></div>` + projects.map(({ p, n }) => `<a class="side-item side-project ${cur === "projects" && Router.params.id === p.id ? "active" : ""}" href="#projects/${esc(p.id)}" title="${esc(p.name)}"><span class="swatch" style="background:${esc(p.color)}"></span><span class="side-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="count">${n}</span></a>`).join("") : "");
+      (projects.length ? `<div class="side-label"><span class="side-text">Active projects</span></div>` + projects.map(({ p, n }) => `<a class="side-item side-project ${cur === "projects" && Router.params.id === p.id ? "active" : ""}" href="#projects/${esc(p.id)}" title="${esc(p.name)}"><span class="swatch" style="background:${esc(p.color)}"></span><span class="side-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="count">${n}</span></a>`).join("") : "") +
+      sideCategories(cur);
 
     const tabs = [NAV[0], NAV[1], NAV[2], NAV[3], { key: "more", label: "More", icon: "more" }];
     const tabActive = cur === "review" || cur === "done" ? "more" : cur;
@@ -100,6 +115,7 @@
       <button type="button" class="mrow" data-go="review">${App.icon("review")}<div class="grow"><div>Weekly review ${c.reviewDue ? `<span class="pill orange" style="margin-left:6px">Due</span>` : ""}</div><div class="sub">Wins, slips, follow-ups, next week</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-go="done">${App.icon("archive")}<div class="grow"><div>Done</div><div class="sub">${c.doneWeek} finished this week</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="self">${App.icon("me")}<div class="grow"><div>New self-assigned task</div><div class="sub">Something you're asking of yourself</div></div>${App.icon("right", "sm")}</button>
+      <button type="button" class="mrow" data-a="categories">${App.icon("tag")}<div class="grow"><div>Categories</div><div class="sub">${esc(Model.categories().slice(0, 4).map(c => c.label).join(", ") || "Add your own")}${Model.categories().length > 4 ? "…" : ""}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="templates">${App.icon("template")}<div class="grow"><div>Task templates</div><div class="sub">${Store.templates.size ? App.plural(Store.templates.size, "template") : "Reusable checklists"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow"><div>Recently deleted</div><div class="sub">${Store.trash.size ? App.plural(Store.trash.size, "task") + " · kept 30 days" : "Empty"}</div></div>${App.icon("right", "sm")}</button>
       <button type="button" class="mrow" data-a="export">${App.icon("download")}<div class="grow"><div>Export &amp; reports</div><div class="sub">Excel, monthly summary, backup</div></div>${App.icon("right", "sm")}</button>
@@ -122,6 +138,7 @@
     else if (a === "search") Router.go("tasks", { focusSearch: true });
     else if (a === "trash") global.Actions.openTrash();
     else if (a === "templates") global.Templates.manage();
+    else if (a === "categories") global.Categories.manage();
   }
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-action]"); if (!b) return;
@@ -207,6 +224,7 @@
       <div class="mt-16">
         <button type="button" class="mrow" data-a="shortcuts">${App.icon("keyboard")}<div class="grow">Keyboard shortcuts</div>${App.icon("right", "sm")}</button>
         <button type="button" class="mrow" data-a="export">${App.icon("download")}<div class="grow">Export &amp; reports</div>${App.icon("right", "sm")}</button>
+        <button type="button" class="mrow" data-a="categories">${App.icon("tag")}<div class="grow">Categories <span class="muted">(${Model.categories().length})</span></div>${App.icon("right", "sm")}</button>
         <button type="button" class="mrow" data-a="templates">${App.icon("template")}<div class="grow">Task templates${Store.templates.size ? ` <span class="muted">(${Store.templates.size})</span>` : ""}</div>${App.icon("right", "sm")}</button>
         <button type="button" class="mrow" data-a="trash">${App.icon("trash")}<div class="grow">Recently deleted${Store.trash.size ? ` <span class="muted">(${Store.trash.size})</span>` : ""}</div>${App.icon("right", "sm")}</button>
       </div>

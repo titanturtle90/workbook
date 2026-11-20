@@ -18,7 +18,7 @@
     ["Selected task", [
       [["J"], "Next task (or ↓)"], [["K"], "Previous task (or ↑)"], [["Enter"], "Open"], [["X"], "Mark done / reopen"],
       [["S"], "Change status (then 1–8)"], [["P"], "Cycle priority"], [["D"], "Change due date"], [["Z"], "Not until… (hide from Today)"], [["V"], "Select / unselect (change several at once)"], [["F"], "Finish the next step"],
-      [["L"], "Add a note"], [["Del"], "Delete"]
+      [["L"], "Add to the activity log"], [["Del"], "Delete"]
     ]],
     ["In a form", [
       [["Enter"], "Add (quick add, steps, notes)"], [["Ctrl", "Enter"], "Save & close"], [["↑", "↓"], "Pick from suggestions"]

@@ -1,9 +1,9 @@
-const CACHE_NAME = "workbook-v26";
-const V = "?v=26";
+const CACHE_NAME = "workbook-v27";
+const V = "?v=27";
 const PRECACHE_URLS = [
   "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
   "./css/app.css" + V,
-  ...["firebase-config", "core", "model", "store", "components", "shots", "bulk", "editor", "templates", "views/today", "views/tasks", "views/people",
+  ...["firebase-config", "core", "model", "store", "components", "shots", "bulk", "editor", "templates", "categories", "views/today", "views/tasks", "views/people",
       "views/projects", "views/meetings", "views/done", "views/review", "export", "shortcuts", "pull", "app"].map(f => `./js/${f}.js${V}`)
 ];
 
