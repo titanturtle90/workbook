@@ -65,7 +65,7 @@
         ${sec("waiting", "Waiting & follow-ups", "", b.waiting)}
         ${sec("triage", "New asks to triage", "", b.triage)}
         ${sec("later", "Later & no date", "", b.later)}
-        ${sec("snoozed", "Snoozed (not until later)", "", b.snoozed)}
+        ${sec("snoozed", "Snoozed", "", b.snoozed)}
       `;
       root.querySelectorAll("[data-jump]").forEach(btn => btn.onclick = () => {
         const id = btn.dataset.jump;

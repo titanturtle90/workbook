@@ -188,7 +188,7 @@
     // Snoozed tasks ("not until" a later date) drop to their own section at the bottom, soonest first.
     const snoozed = tasks.filter(Model.isSnoozed).sort((a, b) => a.startDate.localeCompare(b.startDate) || Model.manualCompare(a, b));
     const groups = Model.group(tasks.filter(t => !Model.isSnoozed(t)), state.group).filter(g => g.tasks.length);
-    if (snoozed.length) groups.push({ key: "__snoozed", label: "Snoozed (not until later)", snoozed: true, tasks: snoozed });
+    if (snoozed.length) groups.push({ key: "__snoozed", label: "Snoozed", snoozed: true, tasks: snoozed });
     if (!App.isDesktop()) {
       return dragHint() + groups.map(g => (g.label ? `<div class="section-head mt-16"><h2>${g.color ? `<span class="dot-sw" style="background:${esc(g.color)};margin-right:6px"></span>` : ""}${g.snoozed ? App.icon("moon", "sm") : ""}${esc(g.label)}</h2><span class="count">${g.tasks.length}</span></div>` : `<div class="mt-12"></div>`) + cardsHtml(g.tasks)).join("");
     }
